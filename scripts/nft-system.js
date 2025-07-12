@@ -332,7 +332,7 @@ class VaultCoinNFTs {
     
     // Add visual effect based on NFT rarity
     const visualEffect = this.getVisualEffect(nft.visualEffect);
-    
+
     notification.innerHTML = `
       <div style="font-size: 4rem; margin-bottom: 1rem;">${visualEffect.icon}</div>
       <div style="font-weight: 700; margin-bottom: 0.5rem; color: var(--primary-gold);">NFT Unlocked!</div>
@@ -340,14 +340,14 @@ class VaultCoinNFTs {
       <div style="color: rgba(255, 255, 255, 0.7); margin-bottom: 1rem;">${nft.description}</div>
       <div style="background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold)); color: var(--dark-bg); padding: 0.5rem 1rem; border-radius: 999px; font-weight: 700; display: inline-block;">
         +${(nft.boost * 100).toFixed(0)}% ${this.getBoostType(nft.type)} Boost
-      </div>
+        </div>
       <div style="margin-top: 1rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);">
         Check your profile to see the effects!
       </div>
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Add sparkle effects
     this.createSparkleEffects();
     
@@ -419,9 +419,9 @@ class VaultCoinNFTs {
   renderNFTGallery() {
     const container = document.getElementById('nft-gallery');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     this.userNFTs.forEach(nft => {
       const nftCard = this.renderNFTCard(nft);
       container.appendChild(nftCard);
@@ -435,13 +435,13 @@ class VaultCoinNFTs {
     const card = document.createElement('div');
     card.className = `nft-card rarity-${nft.rarity}`;
     card.style.cssText = `
-      background: var(--card-bg);
+        background: var(--card-bg);
       backdrop-filter: blur(20px);
       border: 2px solid ${this.getRarityColor(nft.rarity)};
-      border-radius: 1rem;
+        border-radius: 1rem;
       padding: 1.5rem;
-      text-align: center;
-      transition: all 0.3s ease;
+        text-align: center;
+        transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
     `;
