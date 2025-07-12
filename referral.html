@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" class="text-gray-900">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Referral • VaultCoin</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Satoshi Font (Bunny Fonts CDN) -->
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=satoshi:400,500,700,900" />
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Satoshi', 'Inter', Arial, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(120deg, #f5f7fa 0%, #e6e9f0 50%, #dbe6e4 100%);
+      overflow-x: hidden;
+    }
+    .bg-animated {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(120deg, #f5f7fa, #e6e9f0, #dbe6e4, #f7f6f9, #e0eafc, #cfdef3);
+      background-size: 400% 400%;
+      animation: gradientMove 18s ease-in-out infinite;
+      opacity: 0.8;
+    }
+    @keyframes gradientMove {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+    .sparkle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.7;
+      animation: sparkleMove 8s linear infinite;
+      filter: blur(1px);
+    }
+    @keyframes sparkleMove {
+      0% {transform: translateY(0);}
+      100% {transform: translateY(-100vh);}
+    }
+    .referral-card {
+      background: rgba(255,255,255,0.75);
+      box-shadow: 0 4px 24px 0 rgba(0, 64, 255, 0.08), 0 1.5px 6px 0 rgba(0,0,0,0.04);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.4);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .referral-card:hover {
+      box-shadow: 0 8px 32px 0 rgba(0, 64, 255, 0.18), 0 3px 12px 0 rgba(0,0,0,0.08);
+      transform: translateY(-2px) scale(1.025);
+    }
+    .bottom-nav {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(8px);
+      border-radius: 1.5em;
+      box-shadow: 0 2px 12px 0 rgba(0,0,0,0.04);
+    }
+  </style>
+</head>
+
+<body class="relative min-h-screen overflow-x-hidden">
+  <!-- Animated Gradient Background -->
+  <div class="bg-animated"></div>
+  <!-- Sparkles -->
+  <div id="sparkles"></div>
+
+  <!-- 🤝 Referral Header -->
+  <div class="text-center py-10 relative z-10">
+    <h1 class="text-3xl font-extrabold text-yellow-500 drop-shadow-lg">Invite & Earn</h1>
+    <p class="text-sm text-gray-500">Share your referral link and earn VaultCoin for every friend who joins!</p>
+  </div>
+
+  <!-- 🔗 Referral Card -->
+  <div class="referral-card max-w-md mx-auto p-6 rounded-2xl mt-6 mb-10 relative z-10 text-center">
+    <div class="mb-4">
+      <span class="text-xs text-gray-400">Your Referral Link</span>
+      <div class="flex items-center justify-center gap-2 mt-2">
+        <input type="text" readonly value="https://vaultcoin.com/r/yourcode" class="w-64 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-mono text-sm focus:outline-none" id="referral-link" />
+        <button onclick="copyReferral()" class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1">
+          <i data-lucide="copy" class="w-4 h-4"></i> Copy
+        </button>
+      </div>
+    </div>
+    <div class="border-t border-gray-200 my-4"></div>
+    <div>
+      <span class="text-xs text-gray-400">Total Invites</span>
+      <div class="font-bold text-lg text-blue-500 mt-1">7</div>
+    </div>
+    <div class="mt-4 text-xs text-gray-500">
+      Earn <span class="font-bold text-yellow-600">+100 VLTC</span> for every friend who signs up!
+    </div>
+  </div>
+
+  <!-- 🔻 Bottom Nav (glassy, synced) -->
+  <div class="mt-12 flex gap-5 text-gray-600 z-10 text-sm justify-center pb-10 bottom-nav relative">
+    <a href="shop.html" class="flex items-center gap-1 hover:text-black"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Shop</a>
+    <a href="boost.html" class="flex items-center gap-1 hover:text-black"><i data-lucide="zap" class="w-4 h-4"></i> Boost</a>
+    <a href="tasks.html" class="flex items-center gap-1 hover:text-black"><i data-lucide="list-checks" class="w-4 h-4"></i> Tasks</a>
+    <a href="leaderboard.html" class="flex items-center gap-1 hover:text-black"><i data-lucide="trophy" class="w-4 h-4"></i> Leaderboard</a>
+    <a href="profile.html" class="flex items-center gap-1 hover:text-black"><i data-lucide="user" class="w-4 h-4"></i> Profile</a>
+  </div>
+
+  <!-- Lucide Icons & Sparkles -->
+  <script>
+    function copyReferral() {
+      const input = document.getElementById('referral-link');
+      input.select();
+      input.setSelectionRange(0, 99999);
+      document.execCommand('copy');
+    }
+    window.addEventListener("load", () => {
+      lucide.createIcons();
+      // Sparkle effect
+      const sparkleColors = ["#ffe066", "#fff9c4", "#b5c6e0", "#e0eafc", "#cfdef3"];
+      const sparkles = document.getElementById("sparkles");
+      for (let i = 0; i < 24; i++) {
+        const s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.width = s.style.height = `${Math.random() * 8 + 4}px`;
+        s.style.left = `${Math.random() * 100}vw`;
+        s.style.top = `${Math.random() * 100}vh`;
+        s.style.background = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
+        s.style.opacity = Math.random() * 0.5 + 0.3;
+        s.style.animationDuration = `${6 + Math.random() * 6}s`;
+        sparkles.appendChild(s);
+      }
+    });
+  </script>
+  <script src="scripts/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VaultCoin • Shop</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=satoshi:400,500,700,900" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Styles -->
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    :root {
+      --primary-gold: #f9c922;
+      --secondary-gold: #fbbf24;
+      --silver: #c0c0c0;
+      --platinum: #e5e4e2;
+      --diamond: #b9f2ff;
+      --elite: #ffd700;
+      --dark-bg: #0a0a0a;
+      --card-bg: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.05);
+      --glow: 0 0 20px rgba(249, 201, 34, 0.3);
+    }
+
+    body {
+      font-family: 'Satoshi', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #0f0f0f);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(249, 201, 34, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(192, 192, 192, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(185, 242, 255, 0.05) 0%, transparent 50%);
+      animation: bgPulse 8s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+      position: relative;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(45deg, var(--primary-gold), var(--silver), var(--diamond));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoGlow 3s ease-in-out infinite;
+      margin-bottom: 0.5rem;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+
+    /* Balance Display */
+    .balance-container {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      margin: 1rem;
+      text-align: center;
+      box-shadow: var(--glow);
+    }
+
+    .balance-label {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.5rem;
+    }
+
+    .balance-amount {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--primary-gold);
+      text-shadow: 0 0 10px rgba(249, 201, 34, 0.5);
+    }
+
+    /* Shop Categories */
+    .shop-categories {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .shop-categories::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-btn {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 0.8rem 1.5rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      backdrop-filter: blur(10px);
+    }
+
+    .category-btn.active,
+    .category-btn:hover {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      border-color: var(--primary-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(249, 201, 34, 0.3);
+    }
+
+    /* Shop Items */
+    .shop-items {
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .empty-shop {
+      text-align: center;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 3rem 2rem;
+      max-width: 500px;
+    }
+
+    .empty-shop-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-shop h3 {
+      font-size: 1.5rem;
+      color: var(--primary-gold);
+      margin-bottom: 1rem;
+    }
+
+    .empty-shop p {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .coming-soon-badge {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-block;
+    }
+
+    .shop-item {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shop-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .shop-item:hover::before {
+      left: 100%;
+    }
+
+    .shop-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(249, 201, 34, 0.2);
+      border-color: var(--primary-gold);
+    }
+
+    .item-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 1rem;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(249, 201, 34, 0.3);
+    }
+
+    .item-icon svg {
+      width: 30px;
+      height: 30px;
+      color: var(--dark-bg);
+    }
+
+    .item-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: white;
+    }
+
+    .item-description {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+
+    .item-price {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary-gold);
+      margin-bottom: 1rem;
+    }
+
+    .buy-btn {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .buy-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(249, 201, 34, 0.4);
+    }
+
+    .buy-btn:disabled {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Vault Upgrade Special Styling */
+    .vault-upgrade {
+      border: 2px solid var(--primary-gold);
+      background: linear-gradient(135deg, var(--card-bg), rgba(249, 201, 34, 0.1));
+    }
+
+    .vault-upgrade .item-icon {
+      background: linear-gradient(45deg, var(--diamond), var(--elite));
+    }
+
+    /* NFT Rarity Styling */
+    .rarity-rare {
+      border: 2px solid var(--silver);
+      background: linear-gradient(135deg, var(--card-bg), rgba(192, 192, 192, 0.1));
+    }
+
+    .rarity-epic {
+      border: 2px solid var(--primary-gold);
+      background: linear-gradient(135deg, var(--card-bg), rgba(249, 201, 34, 0.1));
+    }
+
+    .rarity-legendary {
+      border: 2px solid var(--diamond);
+      background: linear-gradient(135deg, var(--card-bg), rgba(185, 242, 255, 0.1));
+    }
+
+    .rarity-mythic {
+      border: 2px solid var(--elite);
+      background: linear-gradient(135deg, var(--card-bg), rgba(255, 215, 0, 0.1));
+      animation: mythicGlow 2s ease-in-out infinite;
+    }
+
+    .rarity-collection {
+      border: 2px solid var(--platinum);
+      background: linear-gradient(135deg, var(--card-bg), rgba(229, 228, 226, 0.1));
+      animation: collectionGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes mythicGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+    }
+
+    @keyframes collectionGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(229, 228, 226, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(229, 228, 226, 0.6); }
+    }
+
+    .item-rarity {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .rarity-rare .item-rarity {
+      background: var(--silver);
+      color: var(--dark-bg);
+    }
+
+    .rarity-epic .item-rarity {
+      background: var(--primary-gold);
+      color: var(--dark-bg);
+    }
+
+    .rarity-legendary .item-rarity {
+      background: var(--diamond);
+      color: var(--dark-bg);
+    }
+
+    .rarity-mythic .item-rarity {
+      background: var(--elite);
+      color: var(--dark-bg);
+    }
+
+    .rarity-collection .item-rarity {
+      background: var(--platinum);
+      color: var(--dark-bg);
+    }
+
+    /* Special Items Styling */
+    .special-item {
+      border: 2px solid var(--primary-gold);
+      background: linear-gradient(135deg, var(--card-bg), rgba(249, 201, 34, 0.05));
+    }
+
+    .special-item .item-icon {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      animation: specialPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes specialPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* Navigation */
+    .nav-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      color: var(--primary-gold);
+      background: rgba(249, 201, 34, 0.1);
+    }
+
+    .nav-item svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    /* Loading State */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid var(--primary-gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .logo { font-size: 2rem; }
+      .shop-items { grid-template-columns: 1fr; }
+      .balance-amount { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1 class="logo">VaultCoin</h1>
+    <p class="tagline">PREMIUM SHOP</p>
+  </header>
+
+  <!-- Balance Display -->
+  <div class="balance-container">
+    <div class="balance-label">Your Balance</div>
+    <div class="balance-amount" id="balance">0.00 VLTC</div>
+      </div>
+
+  <!-- Shop Categories -->
+  <div class="shop-categories">
+    <button class="category-btn active" data-category="all">All Items</button>
+    <button class="category-btn" data-category="boosts">Boosts</button>
+    <button class="category-btn" data-category="vaults">Vault Upgrades</button>
+    <button class="category-btn" data-category="nfts">NFTs</button>
+    <button class="category-btn" data-category="special">Special</button>
+    </div>
+
+  <!-- Shop Items -->
+  <div class="shop-items" id="shop-items">
+    <div class="empty-shop">
+      <div class="empty-shop-icon" data-lucide="shopping-cart"></div>
+      <h3>Shop Coming Soon!</h3>
+      <p>We are currently working on expanding our shop offerings. Stay tuned for new items and upgrades!</p>
+      <span class="coming-soon-badge">Coming Soon</span>
+    </div>
+      </div>
+
+  <!-- Loading State -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Loading shop items...</p>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <a href="index.html" class="nav-item">
+      <i data-lucide="zap"></i>
+      <span>Mine</span>
+    </a>
+    <a href="shop.html" class="nav-item active">
+      <i data-lucide="shopping-cart"></i>
+      <span>Shop</span>
+    </a>
+    <a href="tasks.html" class="nav-item">
+      <i data-lucide="check-square"></i>
+      <span>Tasks</span>
+    </a>
+    <a href="leaderboard.html" class="nav-item">
+      <i data-lucide="trophy"></i>
+      <span>Top</span>
+    </a>
+    <a href="profile.html" class="nav-item">
+      <i data-lucide="user"></i>
+      <span>Profile</span>
+    </a>
+    <a href="social.html" class="nav-item">
+      <i data-lucide="share-2"></i>
+      <span>Social</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/shop.js"></script>
+  <script>
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', () => {
+      const initIcons = () => {
+        if (window.lucide) {
+          lucide.createIcons();
+        } else {
+          setTimeout(initIcons, 100);
+        }
+      };
+      initIcons();
+      
+      // Fallback for icons if Lucide fails
+      setTimeout(() => {
+        const missingIcons = document.querySelectorAll('[data-lucide]:not(svg)');
+        missingIcons.forEach(icon => {
+          const iconName = icon.getAttribute('data-lucide');
+          const fallbackText = getFallbackIcon(iconName);
+          icon.innerHTML = fallbackText;
+        });
+      }, 2000);
+      
+      function getFallbackIcon(iconName) {
+        const fallbacks = {
+          'calendar': '📅',
+          'clock': '⏰',
+          'trophy': '🏆',
+          'share-2': '📤',
+          'zap': '⚡',
+          'shopping-cart': '🛒',
+          'check-square': '✅',
+          'user': '👤',
+          'coins': '💰',
+          'trending-up': '📈',
+          'users': '👥',
+          'message-circle': '💬',
+          'youtube': '📺',
+          'twitter': '🐦',
+          'instagram': '📷',
+          'message-square': '💭',
+          'video': '🎥'
+        };
+        return fallbacks[iconName] || '📋';
+      }
+    });
+  </script>
+</body>
+</html>

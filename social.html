@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VaultCoin • Social</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=satoshi:400,500,700,900" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Styles -->
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    :root {
+      --primary-gold: #f9c922;
+      --secondary-gold: #fbbf24;
+      --silver: #c0c0c0;
+      --platinum: #e5e4e2;
+      --diamond: #b9f2ff;
+      --elite: #ffd700;
+      --dark-bg: #0a0a0a;
+      --card-bg: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.05);
+      --glow: 0 0 20px rgba(249, 201, 34, 0.3);
+    }
+
+    body {
+      font-family: 'Satoshi', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #0f0f0f);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      padding-bottom: 100px; /* Add space for fixed navbar */
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(249, 201, 34, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(192, 192, 192, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(185, 242, 255, 0.05) 0%, transparent 50%);
+      animation: bgPulse 8s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+      position: relative;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(45deg, var(--primary-gold), var(--silver), var(--diamond));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoGlow 3s ease-in-out infinite;
+      margin-bottom: 0.5rem;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+
+    /* Community Section */
+    .community-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 2rem;
+      margin: 1rem;
+      text-align: center;
+      box-shadow: var(--glow);
+    }
+
+    .community-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--primary-gold);
+    }
+
+    .community-desc {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    /* Social Links Grid */
+    .social-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .social-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .social-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .social-card:hover::before {
+      left: 100%;
+    }
+
+    .social-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(249, 201, 34, 0.2);
+      border-color: var(--primary-gold);
+    }
+
+    .social-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(249, 201, 34, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .social-card:hover .social-icon {
+      transform: scale(1.1);
+      box-shadow: 0 0 30px rgba(249, 201, 34, 0.5);
+    }
+
+    .social-icon svg {
+      width: 30px;
+      height: 30px;
+      color: white;
+    }
+
+    /* Platform-specific colors */
+    .telegram .social-icon {
+      background: linear-gradient(45deg, #0088cc, #229ED9);
+    }
+
+    .youtube .social-icon {
+      background: linear-gradient(45deg, #FF0000, #FF4444);
+    }
+
+    .twitter .social-icon {
+      background: linear-gradient(45deg, #1DA1F2, #0D8BD9);
+    }
+
+    .instagram .social-icon {
+      background: linear-gradient(45deg, #E4405F, #F77737);
+    }
+
+    .discord .social-icon {
+      background: linear-gradient(45deg, #5865F2, #7289DA);
+    }
+
+    .tiktok .social-icon {
+      background: linear-gradient(45deg, #000000, #25F4EE);
+    }
+
+    .social-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: white;
+    }
+
+    .social-handle {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 1rem;
+    }
+
+    .social-desc {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.4;
+    }
+
+    .follow-btn {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    .follow-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(249, 201, 34, 0.4);
+    }
+
+    /* Stats Section */
+    .stats-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      margin: 1rem;
+      box-shadow: var(--glow);
+    }
+
+    .stats-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--primary-gold);
+      text-align: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary-gold);
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Navigation */
+    .nav-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      color: var(--primary-gold);
+      background: rgba(249, 201, 34, 0.1);
+    }
+
+    .nav-item svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .logo { font-size: 2rem; }
+      .social-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Community Stats */
+    .stats-container {
+      padding: 1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(249, 201, 34, 0.2);
+      border-color: rgba(249, 201, 34, 0.3);
+    }
+
+    .stat-card.optional {
+      opacity: 0.8;
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dark-bg);
+      font-size: 1.5rem;
+    }
+
+    .stat-info {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-gold);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-growth {
+      font-size: 0.8rem;
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .join-btn {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .join-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(249, 201, 34, 0.4);
+    }
+
+    /* Social Tasks */
+    .tasks-section {
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-gold);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .task-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(249, 201, 34, 0.2);
+    }
+
+    .task-card.completed {
+      border-color: #10b981;
+      background: linear-gradient(135deg, var(--card-bg), rgba(16, 185, 129, 0.1));
+    }
+
+    .task-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      color: var(--dark-bg);
+    }
+
+    .task-title {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: white;
+    }
+
+    .task-reward {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+
+    /* Community Highlights */
+    .highlights-section {
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .highlight-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .highlight-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(249, 201, 34, 0.2);
+    }
+
+    .highlight-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dark-bg);
+      flex-shrink: 0;
+    }
+
+    .highlight-content h3 {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: white;
+    }
+
+    .highlight-content p {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1 class="logo">VaultCoin</h1>
+    <p class="tagline">COMMUNITY HUB</p>
+  </header>
+
+  <!-- Community Stats -->
+  <div class="stats-container">
+    <div class="stats-grid">
+      <!-- Telegram Stats -->
+      <div class="stat-card">
+        <div class="stat-icon" data-lucide="message-circle"></div>
+        <div class="stat-info">
+          <div class="stat-label">Telegram</div>
+          <div class="stat-value" id="telegram-members">15,432</div>
+          <div class="stat-growth">+156 today</div>
+    </div>
+        <button class="join-btn" onclick="joinTelegram()">Join</button>
+      </div>
+
+      <!-- Twitter Stats -->
+      <div class="stat-card">
+        <div class="stat-icon" data-lucide="twitter"></div>
+        <div class="stat-info">
+          <div class="stat-label">Twitter</div>
+          <div class="stat-value" id="twitter-followers">8,923</div>
+          <div class="stat-growth">+89 today</div>
+    </div>
+        <button class="join-btn" onclick="followTwitter()">Follow</button>
+      </div>
+
+      <!-- Instagram Stats -->
+      <div class="stat-card">
+        <div class="stat-icon" data-lucide="instagram"></div>
+        <div class="stat-info">
+          <div class="stat-label">Instagram</div>
+          <div class="stat-value" id="instagram-followers">6,789</div>
+          <div class="stat-growth">+67 today</div>
+    </div>
+        <button class="join-btn" onclick="followInstagram()">Follow</button>
+      </div>
+
+      <!-- YouTube Stats -->
+      <div class="stat-card">
+        <div class="stat-icon" data-lucide="youtube"></div>
+        <div class="stat-info">
+          <div class="stat-label">YouTube</div>
+          <div class="stat-value" id="youtube-subscribers">3,456</div>
+          <div class="stat-growth">+34 today</div>
+    </div>
+        <button class="join-btn" onclick="subscribeYouTube()">Subscribe</button>
+      </div>
+
+      <!-- Discord Stats (Optional) -->
+      <div class="stat-card optional">
+        <div class="stat-icon" data-lucide="message-square"></div>
+        <div class="stat-info">
+          <div class="stat-label">Discord</div>
+          <div class="stat-value" id="discord-members">4,567</div>
+          <div class="stat-growth">+45 today</div>
+    </div>
+        <button class="join-btn" onclick="joinDiscord()">Join</button>
+      </div>
+    </div>
+      </div>
+
+  <!-- Social Tasks Progress -->
+  <div class="tasks-section">
+    <h2 class="section-title">Social Tasks</h2>
+    <div class="tasks-grid" id="social-tasks">
+      <!-- Tasks will be loaded here -->
+    </div>
+  </div>
+
+  <!-- Community Highlights -->
+  <div class="highlights-section">
+    <h2 class="section-title">Community Highlights</h2>
+    <div class="highlights-grid">
+      <div class="highlight-card">
+        <div class="highlight-icon" data-lucide="users"></div>
+        <div class="highlight-content">
+          <h3>Growing Community</h3>
+          <p>Join thousands of VaultCoin miners worldwide</p>
+        </div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon" data-lucide="trending-up"></div>
+        <div class="highlight-content">
+          <h3>Daily Rewards</h3>
+          <p>Earn VLTC by engaging with our community</p>
+        </div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon" data-lucide="star"></div>
+        <div class="highlight-content">
+          <h3>Exclusive Content</h3>
+          <p>Get early access to updates and features</p>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <a href="index.html" class="nav-item">
+      <i data-lucide="zap"></i>
+      <span>Mine</span>
+    </a>
+    <a href="shop.html" class="nav-item">
+      <i data-lucide="shopping-cart"></i>
+      <span>Shop</span>
+    </a>
+    <a href="tasks.html" class="nav-item">
+      <i data-lucide="check-square"></i>
+      <span>Tasks</span>
+    </a>
+    <a href="leaderboard.html" class="nav-item">
+      <i data-lucide="trophy"></i>
+      <span>Top</span>
+    </a>
+    <a href="profile.html" class="nav-item">
+      <i data-lucide="user"></i>
+      <span>Profile</span>
+    </a>
+    <a href="social.html" class="nav-item active">
+      <i data-lucide="share-2"></i>
+      <span>Social</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/social.js"></script>
+  <script>
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', () => {
+      const initIcons = () => {
+        if (window.lucide) {
+          lucide.createIcons();
+        } else {
+          setTimeout(initIcons, 100);
+        }
+      };
+      initIcons();
+      
+      // Fallback for icons if Lucide fails
+      setTimeout(() => {
+        const missingIcons = document.querySelectorAll('[data-lucide]:not(svg)');
+        missingIcons.forEach(icon => {
+          const iconName = icon.getAttribute('data-lucide');
+          const fallbackText = getFallbackIcon(iconName);
+          icon.innerHTML = fallbackText;
+        });
+      }, 2000);
+      
+      function getFallbackIcon(iconName) {
+        const fallbacks = {
+          'calendar': '📅',
+          'clock': '⏰',
+          'trophy': '🏆',
+          'share-2': '📤',
+          'zap': '⚡',
+          'shopping-cart': '🛒',
+          'check-square': '✅',
+          'user': '👤',
+          'coins': '💰',
+          'trending-up': '📈',
+          'users': '👥',
+          'message-circle': '💬',
+          'youtube': '📺',
+          'twitter': '🐦',
+          'instagram': '📷',
+          'message-square': '💭',
+          'video': '🎥'
+        };
+        return fallbacks[iconName] || '📋';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VaultCoin • Admin Panel</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=satoshi:400,500,700,900" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Styles -->
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    :root {
+      --primary-gold: #f9c922;
+      --secondary-gold: #fbbf24;
+      --silver: #c0c0c0;
+      --platinum: #e5e4e2;
+      --diamond: #b9f2ff;
+      --elite: #ffd700;
+      --dark-bg: #0a0a0a;
+      --card-bg: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.05);
+      --glow: 0 0 20px rgba(249, 201, 34, 0.3);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    body {
+      font-family: 'Satoshi', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #0f0f0f);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Login Screen */
+    .login-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #0f0f0f);
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-card h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(45deg, var(--primary-gold), var(--silver));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .login-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      color: white;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .login-input:focus {
+      outline: none;
+      border-color: var(--primary-gold);
+      box-shadow: 0 0 10px rgba(249, 201, 34, 0.3);
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(45deg, var(--primary-gold), var(--silver), var(--diamond));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    .admin-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .admin-name {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .logout-btn {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+
+    /* Admin Container */
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--glow);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--primary-gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+
+    /* Admin Sections */
+    .admin-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-gold);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Supply Management */
+    .supply-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .control-label {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+
+    .control-input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.8rem;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .control-input:focus {
+      outline: none;
+      border-color: var(--primary-gold);
+      box-shadow: 0 0 10px rgba(249, 201, 34, 0.3);
+    }
+
+    /* Buttons */
+    .btn {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(249, 201, 34, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(45deg, var(--danger), #dc2626);
+      color: white;
+    }
+
+    .btn-success {
+      background: linear-gradient(45deg, var(--success), #059669);
+      color: white;
+    }
+
+    .btn-warning {
+      background: linear-gradient(45deg, var(--warning), #d97706);
+      color: white;
+    }
+
+    /* User Management */
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .users-table th,
+    .users-table td {
+      padding: 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .users-table th {
+      background: rgba(255, 255, 255, 0.05);
+      font-weight: 700;
+      color: var(--primary-gold);
+    }
+
+    .users-table tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Status Indicators */
+    .status-active {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .status-inactive {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      margin: 5% auto;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-gold);
+    }
+
+    .close {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .close:hover {
+      color: var(--danger);
+    }
+
+    .user-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .detail-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1rem;
+      border-radius: 0.5rem;
+    }
+
+    .detail-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.5rem;
+    }
+
+    .detail-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary-gold);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid var(--primary-gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* System Status */
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .status-online {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    .status-maintenance {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+    }
+
+    .status-offline {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .supply-controls {
+        grid-template-columns: 1fr;
+      }
+      
+      .users-table {
+        font-size: 0.8rem;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Login Screen -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <h1>VaultCoin Admin</h1>
+      <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem;">Enter your Telegram ID to access admin panel</p>
+      <input type="text" class="login-input" id="admin-id" placeholder="Your Telegram ID" />
+      <button class="btn" onclick="login()">Login</button>
+      <p style="color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-top: 1rem;">
+        Contact system admin to get access
+      </p>
+    </div>
+  </div>
+
+  <!-- Admin Panel (Hidden until login) -->
+  <div id="admin-panel" style="display: none;">
+  <!-- Header -->
+  <header class="header">
+      <div>
+    <h1 class="logo">VaultCoin</h1>
+    <p class="tagline">ADMIN PANEL</p>
+      </div>
+      <div class="admin-info">
+        <div class="admin-name" id="admin-name">Admin</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+  </header>
+
+  <!-- Admin Container -->
+  <main class="admin-container">
+      <!-- System Status -->
+      <div class="system-status" id="system-status">
+        <i data-lucide="circle"></i>
+        <span id="status-text">System Online</span>
+      </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="total-supply">0</div>
+        <div class="stat-label">Total Supply</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="total-users">0</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="active-miners">0</div>
+        <div class="stat-label">Active Miners</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="total-transactions">0</div>
+        <div class="stat-label">Total Transactions</div>
+      </div>
+    </div>
+
+    <!-- Supply Management -->
+    <div class="admin-section">
+      <h2 class="section-title">
+        <i data-lucide="coins"></i>
+        Supply Management
+      </h2>
+      
+      <div class="supply-controls">
+        <div class="control-group">
+          <label class="control-label">Total Supply (VLTC)</label>
+          <input type="number" class="control-input" id="supply-input" placeholder="110000000">
+        </div>
+        <div class="control-group">
+          <label class="control-label">Mining Rate (VLTC/min)</label>
+          <input type="number" class="control-input" id="mining-rate" placeholder="0.1" step="0.01">
+        </div>
+        <div class="control-group">
+          <label class="control-label">Inflation Rate (%)</label>
+          <input type="number" class="control-input" id="inflation-rate" placeholder="2.5" step="0.1">
+        </div>
+        <div class="control-group">
+          <label class="control-label">Mint Amount (VLTC)</label>
+          <input type="number" class="control-input" id="mint-amount" placeholder="1000">
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn" onclick="updateSupply()">Update Supply</button>
+        <button class="btn btn-success" onclick="mintCoins()">Mint Coins</button>
+        <button class="btn btn-danger" onclick="burnCoins()">Burn Coins</button>
+          <button class="btn btn-warning" onclick="toggleMining()" id="mining-toggle">Pause Mining</button>
+      </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="admin-section">
+      <h2 class="section-title">
+        <i data-lucide="users"></i>
+        User Management
+      </h2>
+      
+      <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+        <button class="btn" onclick="loadUsers()">Refresh Users</button>
+        <button class="btn btn-success" onclick="exportUsers()">Export Data</button>
+          <button class="btn" onclick="searchUsers()">Search Users</button>
+      </div>
+      
+      <div class="loading" id="users-loading">
+        <div class="spinner"></div>
+        <p>Loading users...</p>
+      </div>
+      
+      <table class="users-table" id="users-table" style="display: none;">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Balance</th>
+            <th>Vault Tier</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <!-- Users will be loaded here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- System Controls -->
+    <div class="admin-section">
+      <h2 class="section-title">
+        <i data-lucide="settings"></i>
+        System Controls
+      </h2>
+      
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn" onclick="resetSystem()">Reset System</button>
+          <button class="btn btn-warning" onclick="toggleMaintenance()" id="maintenance-toggle">Maintenance Mode</button>
+        <button class="btn btn-danger" onclick="emergencyStop()">Emergency Stop</button>
+      </div>
+    </div>
+  </main>
+  </div>
+
+  <!-- User Details Modal -->
+  <div id="user-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">User Details</h2>
+        <span class="close" onclick="closeUserModal()">&times;</span>
+      </div>
+      <div id="user-details-content">
+        <!-- User details will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/firebase-config.js"></script>
+  <script>
+    // Admin Panel JavaScript
+    class VaultCoinAdmin {
+      constructor() {
+        this.currentAdmin = null;
+        this.adminUsers = [
+          // Add your Telegram IDs here
+          '7087777545', // Vault Link Coordinator
+          '123456789'  // Add other admin IDs as needed
+        ];
+        this.systemStatus = 'online';
+        this.miningPaused = false;
+        this.maintenanceMode = false;
+        
+        this.init();
+      }
+
+      async init() {
+        try {
+          // Initialize Lucide icons
+          if (window.lucide) {
+            lucide.createIcons();
+          }
+          
+          // Check if already logged in
+          const savedAdmin = localStorage.getItem('vaultcoin_admin');
+          if (savedAdmin && this.adminUsers.includes(savedAdmin)) {
+            this.currentAdmin = savedAdmin;
+            this.showAdminPanel();
+          await this.loadStats();
+          await this.loadUsers();
+          this.setupListeners();
+          } else {
+            this.showLoginScreen();
+          }
+          
+        } catch (error) {
+          console.error('Error initializing admin panel:', error);
+          this.showError('Failed to load admin panel');
+        }
+      }
+
+      showLoginScreen() {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('admin-panel').style.display = 'none';
+      }
+
+      showAdminPanel() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'block';
+        document.getElementById('admin-name').textContent = `Admin (${this.currentAdmin})`;
+      }
+
+      async loadStats() {
+        try {
+          // Load supply data
+          const supplyDoc = await db.collection('system').doc('supply').get();
+          if (supplyDoc.exists) {
+            const supplyData = supplyDoc.data();
+            document.getElementById('total-supply').textContent = supplyData.totalSupply?.toLocaleString() || '0';
+            document.getElementById('supply-input').value = supplyData.totalSupply || '';
+            document.getElementById('mining-rate').value = supplyData.miningRate || '';
+            document.getElementById('inflation-rate').value = supplyData.inflationRate || '';
+          }
+
+          // Load user stats
+          const usersSnapshot = await db.collection('users').get();
+          const totalUsers = usersSnapshot.size;
+          document.getElementById('total-users').textContent = totalUsers.toLocaleString();
+
+          // Count active miners (users with recent activity)
+          const activeMiners = usersSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return data.lastActive && (Date.now() - data.lastActive.toDate()) < 86400000; // 24 hours
+          }).length;
+          document.getElementById('active-miners').textContent = activeMiners.toLocaleString();
+
+          // Load transaction count
+          const transactionsSnapshot = await db.collection('transactions').get();
+          document.getElementById('total-transactions').textContent = transactionsSnapshot.size.toLocaleString();
+
+          // Load system status
+          const systemDoc = await db.collection('system').doc('status').get();
+          if (systemDoc.exists) {
+            const systemData = systemDoc.data();
+            this.systemStatus = systemData.status || 'online';
+            this.miningPaused = systemData.miningPaused || false;
+            this.maintenanceMode = systemData.maintenanceMode || false;
+            this.updateSystemStatus();
+          }
+
+        } catch (error) {
+          console.error('Error loading stats:', error);
+        }
+      }
+
+      updateSystemStatus() {
+        const statusElement = document.getElementById('system-status');
+        const statusText = document.getElementById('status-text');
+        const miningToggle = document.getElementById('mining-toggle');
+        const maintenanceToggle = document.getElementById('maintenance-toggle');
+
+        // Update status display
+        statusElement.className = 'system-status';
+        if (this.maintenanceMode) {
+          statusElement.classList.add('status-maintenance');
+          statusText.textContent = 'Maintenance Mode';
+        } else if (this.miningPaused) {
+          statusElement.classList.add('status-warning');
+          statusText.textContent = 'Mining Paused';
+        } else {
+          statusElement.classList.add('status-online');
+          statusText.textContent = 'System Online';
+        }
+
+        // Update button texts
+        miningToggle.textContent = this.miningPaused ? 'Resume Mining' : 'Pause Mining';
+        maintenanceToggle.textContent = this.maintenanceMode ? 'Disable Maintenance' : 'Maintenance Mode';
+      }
+
+      async loadUsers() {
+        try {
+          const loading = document.getElementById('users-loading');
+          const table = document.getElementById('users-table');
+          const tbody = document.getElementById('users-tbody');
+          
+          loading.style.display = 'block';
+          table.style.display = 'none';
+          
+          const usersSnapshot = await db.collection('users').orderBy('balance', 'desc').limit(50).get();
+          
+          tbody.innerHTML = '';
+          
+          usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            const row = document.createElement('tr');
+            
+            const isActive = userData.lastActive && (Date.now() - userData.lastActive.toDate()) < 86400000;
+            
+            row.innerHTML = `
+              <td>${userData.userId || doc.id}</td>
+              <td>${userData.balance?.toFixed(2) || '0.00'} VLTC</td>
+              <td>${userData.vaultTier || 'silver'}</td>
+              <td class="${isActive ? 'status-active' : 'status-inactive'}">
+                ${isActive ? 'Active' : 'Inactive'}
+              </td>
+              <td>
+                <button class="btn" onclick="admin.viewUser('${doc.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                  View
+                </button>
+                <button class="btn btn-warning" onclick="admin.editUser('${doc.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                  Edit
+                </button>
+              </td>
+            `;
+            
+            tbody.appendChild(row);
+          });
+          
+          loading.style.display = 'none';
+          table.style.display = 'table';
+          
+        } catch (error) {
+          console.error('Error loading users:', error);
+          document.getElementById('users-loading').style.display = 'none';
+        }
+      }
+
+      async viewUser(userId) {
+        try {
+          const userDoc = await db.collection('users').doc(userId).get();
+          if (!userDoc.exists) {
+            alert('User not found');
+            return;
+          }
+
+          const userData = userDoc.data();
+          const modal = document.getElementById('user-modal');
+          const content = document.getElementById('user-details-content');
+
+          content.innerHTML = `
+            <div class="user-details">
+              <div class="detail-item">
+                <div class="detail-label">User ID</div>
+                <div class="detail-value">${userData.userId || userId}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Balance</div>
+                <div class="detail-value">${userData.balance?.toFixed(2) || '0.00'} VLTC</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Vault Tier</div>
+                <div class="detail-value">${userData.vaultTier || 'silver'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Total Mined</div>
+                <div class="detail-value">${userData.totalMined?.toFixed(2) || '0.00'} VLTC</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Mining Streak</div>
+                <div class="detail-value">${userData.streak || 0} days</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Referrals</div>
+                <div class="detail-value">${(userData.referrals || []).length}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Created</div>
+                <div class="detail-value">${userData.createdAt ? new Date(userData.createdAt.toDate()).toLocaleDateString() : 'Unknown'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Last Active</div>
+                <div class="detail-value">${userData.lastActive ? new Date(userData.lastActive.toDate()).toLocaleString() : 'Never'}</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+              <button class="btn" onclick="admin.editUserBalance('${userId}')">Edit Balance</button>
+              <button class="btn btn-warning" onclick="admin.resetUser('${userId}')">Reset User</button>
+              <button class="btn btn-danger" onclick="admin.banUser('${userId}')">Ban User</button>
+            </div>
+          `;
+
+          modal.style.display = 'block';
+          
+        } catch (error) {
+          console.error('Error viewing user:', error);
+          alert('Error loading user details');
+        }
+      }
+
+      async editUserBalance(userId) {
+        const newBalance = prompt('Enter new balance (VLTC):');
+        if (newBalance === null || isNaN(newBalance)) return;
+
+        try {
+          await db.collection('users').doc(userId).update({
+            balance: parseFloat(newBalance),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Log admin action
+          await this.logAdminAction('edit_balance', { userId, newBalance, adminId: this.currentAdmin });
+
+          alert('Balance updated successfully!');
+          this.loadUsers();
+          this.loadStats();
+        } catch (error) {
+          console.error('Error updating balance:', error);
+          alert('Failed to update balance');
+        }
+      }
+
+      async resetUser(userId) {
+        if (!confirm('Are you sure you want to reset this user? This will clear their balance and progress.')) return;
+
+        try {
+          await db.collection('users').doc(userId).update({
+            balance: 0,
+            totalMined: 0,
+            streak: 0,
+            miningStartTime: null,
+            lastClaimTime: null,
+            boosts: [],
+            nfts: [],
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          await this.logAdminAction('reset_user', { userId, adminId: this.currentAdmin });
+
+          alert('User reset successfully!');
+          this.loadUsers();
+          this.loadStats();
+        } catch (error) {
+          console.error('Error resetting user:', error);
+          alert('Failed to reset user');
+        }
+      }
+
+      async banUser(userId) {
+        if (!confirm('Are you sure you want to ban this user? They will not be able to access the system.')) return;
+
+        try {
+          await db.collection('users').doc(userId).update({
+            banned: true,
+            bannedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            bannedBy: this.currentAdmin
+          });
+
+          await this.logAdminAction('ban_user', { userId, adminId: this.currentAdmin });
+
+          alert('User banned successfully!');
+          this.loadUsers();
+        } catch (error) {
+          console.error('Error banning user:', error);
+          alert('Failed to ban user');
+        }
+      }
+
+      async toggleMining() {
+        try {
+          this.miningPaused = !this.miningPaused;
+          
+          await db.collection('system').doc('status').set({
+            miningPaused: this.miningPaused,
+            status: this.miningPaused ? 'mining_paused' : 'online',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: this.currentAdmin
+          }, { merge: true });
+
+          await this.logAdminAction('toggle_mining', { 
+            miningPaused: this.miningPaused, 
+            adminId: this.currentAdmin 
+          });
+
+          this.updateSystemStatus();
+          alert(this.miningPaused ? 'Mining paused successfully!' : 'Mining resumed successfully!');
+        } catch (error) {
+          console.error('Error toggling mining:', error);
+          alert('Failed to toggle mining');
+        }
+      }
+
+      async toggleMaintenance() {
+        try {
+          this.maintenanceMode = !this.maintenanceMode;
+          
+          await db.collection('system').doc('status').set({
+            maintenanceMode: this.maintenanceMode,
+            status: this.maintenanceMode ? 'maintenance' : 'online',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: this.currentAdmin
+          }, { merge: true });
+
+          await this.logAdminAction('toggle_maintenance', { 
+            maintenanceMode: this.maintenanceMode, 
+            adminId: this.currentAdmin 
+          });
+
+          this.updateSystemStatus();
+          alert(this.maintenanceMode ? 'Maintenance mode enabled!' : 'Maintenance mode disabled!');
+        } catch (error) {
+          console.error('Error toggling maintenance:', error);
+          alert('Failed to toggle maintenance mode');
+        }
+      }
+
+      async logAdminAction(action, data) {
+        try {
+          await db.collection('admin_logs').add({
+            action: action,
+            data: data,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            adminId: this.currentAdmin
+          });
+        } catch (error) {
+          console.error('Error logging admin action:', error);
+        }
+      }
+
+      setupListeners() {
+        // Real-time updates for stats
+        db.collection('system').doc('supply').onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            document.getElementById('total-supply').textContent = data.totalSupply?.toLocaleString() || '0';
+          }
+        });
+
+        db.collection('system').doc('status').onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            this.systemStatus = data.status || 'online';
+            this.miningPaused = data.miningPaused || false;
+            this.maintenanceMode = data.maintenanceMode || false;
+            this.updateSystemStatus();
+          }
+        });
+      }
+
+      showError(message) {
+        alert(`Error: ${message}`);
+      }
+    }
+
+    // Global functions for buttons
+    async function updateSupply() {
+      const totalSupply = parseFloat(document.getElementById('supply-input').value);
+      const miningRate = parseFloat(document.getElementById('mining-rate').value);
+      const inflationRate = parseFloat(document.getElementById('inflation-rate').value);
+      
+      if (isNaN(totalSupply) || isNaN(miningRate) || isNaN(inflationRate)) {
+        alert('Please enter valid numbers');
+        return;
+      }
+      
+      try {
+        await db.collection('system').doc('supply').update({
+          totalSupply: totalSupply,
+          miningRate: miningRate,
+          inflationRate: inflationRate,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: admin.currentAdmin
+        });
+        
+        await admin.logAdminAction('update_supply', { 
+          totalSupply, miningRate, inflationRate, adminId: admin.currentAdmin 
+        });
+        
+        alert('Supply updated successfully!');
+      } catch (error) {
+        console.error('Error updating supply:', error);
+        alert('Failed to update supply');
+      }
+    }
+
+    async function mintCoins() {
+      const amount = parseFloat(document.getElementById('mint-amount').value);
+      
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      try {
+        await db.collection('system').doc('supply').update({
+          totalSupply: firebase.firestore.FieldValue.increment(amount),
+          lastMinted: firebase.firestore.FieldValue.serverTimestamp(),
+          mintedBy: admin.currentAdmin
+        });
+        
+        await admin.logAdminAction('mint_coins', { 
+          amount, adminId: admin.currentAdmin 
+        });
+        
+        alert(`Minted ${amount} VLTC successfully!`);
+      } catch (error) {
+        console.error('Error minting coins:', error);
+        alert('Failed to mint coins');
+      }
+    }
+
+    async function burnCoins() {
+      const amount = parseFloat(document.getElementById('mint-amount').value);
+      
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      try {
+        await db.collection('system').doc('supply').update({
+          totalSupply: firebase.firestore.FieldValue.increment(-amount),
+          lastBurned: firebase.firestore.FieldValue.serverTimestamp(),
+          burnedBy: admin.currentAdmin
+        });
+        
+        await admin.logAdminAction('burn_coins', { 
+          amount, adminId: admin.currentAdmin 
+        });
+        
+        alert(`Burned ${amount} VLTC successfully!`);
+      } catch (error) {
+        console.error('Error burning coins:', error);
+        alert('Failed to burn coins');
+      }
+    }
+
+    function toggleMining() {
+      admin.toggleMining();
+    }
+
+    function loadUsers() {
+      admin.loadUsers();
+    }
+
+    async function exportUsers() {
+      try {
+        const usersSnapshot = await db.collection('users').get();
+        const users = [];
+        
+        usersSnapshot.forEach(doc => {
+          const userData = doc.data();
+          users.push({
+            userId: userData.userId || doc.id,
+            balance: userData.balance || 0,
+            vaultTier: userData.vaultTier || 'silver',
+            totalMined: userData.totalMined || 0,
+            streak: userData.streak || 0,
+            referrals: (userData.referrals || []).length,
+            createdAt: userData.createdAt ? userData.createdAt.toDate().toISOString() : null,
+            lastActive: userData.lastActive ? userData.lastActive.toDate().toISOString() : null
+          });
+        });
+
+        const csv = convertToCSV(users);
+        downloadCSV(csv, 'vaultcoin_users.csv');
+        
+        await admin.logAdminAction('export_users', { 
+          count: users.length, adminId: admin.currentAdmin 
+        });
+        
+        alert(`Exported ${users.length} users successfully!`);
+      } catch (error) {
+        console.error('Error exporting users:', error);
+        alert('Failed to export users');
+      }
+    }
+
+    function convertToCSV(data) {
+      const headers = Object.keys(data[0]);
+      const csvRows = [headers.join(',')];
+      
+      for (const row of data) {
+        const values = headers.map(header => {
+          const value = row[header];
+          return typeof value === 'string' ? `"${value}"` : value;
+        });
+        csvRows.push(values.join(','));
+      }
+      
+      return csvRows.join('\n');
+    }
+
+    function downloadCSV(csv, filename) {
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    function searchUsers() {
+      const searchTerm = prompt('Enter user ID or username to search:');
+      if (!searchTerm) return;
+      
+      // Implement user search functionality
+      alert('Search functionality coming soon!');
+    }
+
+    function resetSystem() {
+      if (confirm('Are you sure you want to reset the system? This will clear all user data and cannot be undone!')) {
+        if (confirm('FINAL WARNING: This will delete ALL user data. Type "RESET" to confirm:')) {
+          const confirmation = prompt('Type "RESET" to confirm:');
+          if (confirmation === 'RESET') {
+            alert('System reset functionality coming soon!');
+          }
+        }
+      }
+    }
+
+    function toggleMaintenance() {
+      admin.toggleMaintenance();
+    }
+
+    function emergencyStop() {
+      if (confirm('EMERGENCY STOP: This will immediately stop all mining and transactions. Continue?')) {
+        if (confirm('FINAL WARNING: This will pause all system activity. Type "STOP" to confirm:')) {
+          const confirmation = prompt('Type "STOP" to confirm:');
+          if (confirmation === 'STOP') {
+            admin.toggleMining();
+            admin.toggleMaintenance();
+            alert('Emergency stop activated!');
+          }
+        }
+      }
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').style.display = 'none';
+    }
+
+    // Login function
+    function login() {
+      const adminId = document.getElementById('admin-id').value.trim();
+      
+      if (!adminId) {
+        alert('Please enter your Telegram ID');
+        return;
+      }
+      
+      if (admin.adminUsers.includes(adminId)) {
+        admin.currentAdmin = adminId;
+        localStorage.setItem('vaultcoin_admin', adminId);
+        admin.showAdminPanel();
+        admin.loadStats();
+        admin.loadUsers();
+        admin.setupListeners();
+      } else {
+        alert('Access denied. Contact system administrator.');
+      }
+    }
+
+    function logout() {
+      admin.currentAdmin = null;
+      localStorage.removeItem('vaultcoin_admin');
+      admin.showLoginScreen();
+    }
+
+    // Initialize admin panel
+    let admin;
+    document.addEventListener('DOMContentLoaded', () => {
+      admin = new VaultCoinAdmin();
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('user-modal');
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html> 

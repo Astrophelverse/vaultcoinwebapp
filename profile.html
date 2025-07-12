@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VaultCoin • Profile</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=satoshi:400,500,700,900" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Styles -->
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    :root {
+      --primary-gold: #f9c922;
+      --secondary-gold: #fbbf24;
+      --silver: #c0c0c0;
+      --platinum: #e5e4e2;
+      --diamond: #b9f2ff;
+      --elite: #ffd700;
+      --dark-bg: #0a0a0a;
+      --card-bg: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.05);
+      --glow: 0 0 20px rgba(249, 201, 34, 0.3);
+    }
+
+    body {
+      font-family: 'Satoshi', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #0f0f0f);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(249, 201, 34, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(192, 192, 192, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(185, 242, 255, 0.05) 0%, transparent 50%);
+      animation: bgPulse 8s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+      position: relative;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(45deg, var(--primary-gold), var(--silver), var(--diamond));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoGlow 3s ease-in-out infinite;
+      margin-bottom: 0.5rem;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+
+    /* Profile Header */
+    .profile-header {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 2rem;
+      margin: 1rem;
+      text-align: center;
+      box-shadow: var(--glow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(249, 201, 34, 0.1), transparent);
+      opacity: 0.3;
+    }
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 1rem;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--dark-bg);
+      box-shadow: 0 0 30px rgba(249, 201, 34, 0.5);
+      position: relative;
+      z-index: 1;
+    }
+
+    .profile-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .profile-vault {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+    }
+
+    .vault-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+
+    .vault-icon.silver { background: var(--silver); }
+    .vault-icon.gold { background: var(--primary-gold); }
+    .vault-icon.diamond { background: var(--diamond); }
+    .vault-icon.platinum { background: var(--platinum); }
+    .vault-icon.elite { background: var(--elite); }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-gold);
+      box-shadow: 0 4px 20px rgba(249, 201, 34, 0.2);
+    }
+
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 0.5rem;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--dark-bg);
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--primary-gold);
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+
+    /* Referral Section */
+    .referral-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      margin: 1rem;
+      box-shadow: var(--glow);
+    }
+
+    .referral-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .referral-link {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: monospace;
+      font-size: 0.9rem;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      color: var(--dark-bg);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(249, 201, 34, 0.4);
+    }
+
+    .referral-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .referral-stat {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0.5rem;
+    }
+
+    .referral-stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary-gold);
+      margin-bottom: 0.3rem;
+    }
+
+    .referral-stat-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Achievements Section */
+    .achievements-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      margin: 1rem;
+      box-shadow: var(--glow);
+    }
+
+    .achievements-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+
+    .achievement {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .achievement:hover {
+      transform: scale(1.05);
+      background: rgba(249, 201, 34, 0.1);
+    }
+
+    .achievement.unlocked {
+      background: linear-gradient(135deg, rgba(249, 201, 34, 0.2), rgba(249, 201, 34, 0.1));
+      border: 1px solid var(--primary-gold);
+    }
+
+    .achievement-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 0.5rem;
+      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.3;
+    }
+
+    .achievement.unlocked .achievement-icon {
+      opacity: 1;
+    }
+
+    .achievement-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--dark-bg);
+    }
+
+    .achievement-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .achievement-desc {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Navigation */
+    .nav-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      color: var(--primary-gold);
+      background: rgba(249, 201, 34, 0.1);
+    }
+
+    .nav-item svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    /* Loading State */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid var(--primary-gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .logo { font-size: 2rem; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .referral-stats { grid-template-columns: 1fr; }
+      .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1 class="logo">VaultCoin</h1>
+    <p class="tagline">PROFILE</p>
+  </header>
+
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="profile-avatar" id="profile-avatar">U</div>
+    <div class="profile-name" id="profile-name">User</div>
+    <div class="profile-vault">
+      <div class="vault-icon silver" id="vault-icon"></div>
+      <span id="vault-tier">Silver Vault</span>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="coins"></i>
+      </div>
+      <div class="stat-value" id="balance">0.00</div>
+      <div class="stat-label">VLTC Balance</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="zap"></i>
+      </div>
+      <div class="stat-value" id="total-mined">0.00</div>
+      <div class="stat-label">Total Mined</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="flame"></i>
+      </div>
+      <div class="stat-value" id="streak">0</div>
+      <div class="stat-label">Day Streak</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="users"></i>
+      </div>
+      <div class="stat-value" id="referrals">0</div>
+      <div class="stat-label">Referrals</div>
+    </div>
+  </div>
+
+  <!-- Referral Section -->
+  <div class="referral-section">
+    <div class="referral-header">
+      <i data-lucide="share-2"></i>
+      <span>Referral Program</span>
+    </div>
+    
+    <div class="referral-link">
+      <span id="referral-link">https://t.me/vaultcoin_bot?start=ref123</span>
+      <button class="copy-btn" onclick="copyReferralLink()">
+        <i data-lucide="copy"></i>
+        Copy
+      </button>
+      </div>
+
+    <div class="referral-stats">
+      <div class="referral-stat">
+        <div class="referral-stat-value" id="referral-count">0</div>
+        <div class="referral-stat-label">Total Referrals</div>
+      </div>
+      <div class="referral-stat">
+        <div class="referral-stat-value" id="referral-earnings">0.00</div>
+        <div class="referral-stat-label">Referral Earnings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Achievements Section -->
+  <div class="achievements-section">
+    <div class="achievements-header">
+      <i data-lucide="award"></i>
+      <span>Achievements</span>
+    </div>
+    
+    <div class="achievements-grid" id="achievements-grid">
+      <!-- Achievements will be loaded dynamically -->
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <a href="index.html" class="nav-item">
+      <i data-lucide="zap"></i>
+      <span>Mine</span>
+    </a>
+    <a href="shop.html" class="nav-item">
+      <i data-lucide="shopping-cart"></i>
+      <span>Shop</span>
+    </a>
+    <a href="tasks.html" class="nav-item">
+      <i data-lucide="check-square"></i>
+      <span>Tasks</span>
+    </a>
+    <a href="leaderboard.html" class="nav-item">
+      <i data-lucide="trophy"></i>
+      <span>Top</span>
+    </a>
+    <a href="profile.html" class="nav-item active">
+      <i data-lucide="user"></i>
+      <span>Profile</span>
+    </a>
+    <a href="social.html" class="nav-item">
+      <i data-lucide="share-2"></i>
+      <span>Social</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/profile.js"></script>
+  <script>
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', () => {
+      const initIcons = () => {
+        if (window.lucide) {
+          lucide.createIcons();
+        } else {
+          setTimeout(initIcons, 100);
+        }
+      };
+      initIcons();
+      
+      // Fallback for icons if Lucide fails
+      setTimeout(() => {
+        const missingIcons = document.querySelectorAll('[data-lucide]:not(svg)');
+        missingIcons.forEach(icon => {
+          const iconName = icon.getAttribute('data-lucide');
+          const fallbackText = getFallbackIcon(iconName);
+          icon.innerHTML = fallbackText;
+        });
+      }, 2000);
+      
+      function getFallbackIcon(iconName) {
+        const fallbacks = {
+          'calendar': '📅',
+          'clock': '⏰',
+          'trophy': '🏆',
+          'share-2': '📤',
+          'zap': '⚡',
+          'shopping-cart': '🛒',
+          'check-square': '✅',
+          'user': '👤',
+          'coins': '💰',
+          'trending-up': '📈',
+          'users': '👥',
+          'message-circle': '💬',
+          'youtube': '📺',
+          'twitter': '🐦',
+          'instagram': '📷',
+          'message-square': '💭',
+          'video': '🎥'
+        };
+        return fallbacks[iconName] || '📋';
+      }
+    });
+  </script>
+</body>
+</html>
