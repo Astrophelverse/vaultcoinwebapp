@@ -239,22 +239,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const vaultIcon = document.getElementById('vault-icon');
   if (vaultIcon) {
     vaultIcon.addEventListener('mouseenter', () => {
-      vaultIcon.style.transform = 'translate(-50%, -50%) scale(1.1) rotate(5deg)';
+      vaultIcon.style.transform = 'scale(1.1) rotate(5deg)';
     });
     
     vaultIcon.addEventListener('mouseleave', () => {
-      vaultIcon.style.transform = 'translate(-50%, -50%) scale(1) rotate(0deg)';
+      vaultIcon.style.transform = 'scale(1) rotate(0deg)';
     });
   }
   
-  // Add progress ring animation
-  const progressFill = document.getElementById('progress-fill');
-  if (progressFill) {
-    // Initialize progress ring
-    const circumference = 2 * Math.PI * 70; // r=70
-    progressFill.style.strokeDasharray = circumference;
-    progressFill.style.strokeDashoffset = circumference;
-  }
+  // Vault icon is now standalone without progress ring
 });
 
 // Performance optimization

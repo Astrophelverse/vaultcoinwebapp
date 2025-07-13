@@ -2,14 +2,13 @@
 // Premium Mining Ecosystem Backend
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAByYTxEr5f8zVO-ftTxyhKg9CqwOYmTQU",
+  apiKey: "AIzaSyCOOaHRd57ByZsG4KKJuqEg1PQD1rs8zt0",
   authDomain: "vaultcoin-webapp.firebaseapp.com",
   databaseURL: "https://vaultcoin-webapp-default-rtdb.firebaseio.com",
   projectId: "vaultcoin-webapp",
   storageBucket: "vaultcoin-webapp.firebasestorage.app",
-  messagingSenderId: "1084935069487",
-  appId: "1:1084935069487:web:195dd8c8fe194213320bda",
-  measurementId: "G-K54EDVDNF5"
+  messagingSenderId: "681281999804",
+  appId: "1:681281999804:web:4279e77b26f956fec1d1b9"
 };
 
 // Initialize Firebase with error handling
@@ -84,16 +83,36 @@ class VaultCoinApp {
           // Initialize user data
           await this.initializeUser();
         } else {
-          console.log('No user data in initData, using fallback');
-          // Fallback for development/testing
-          this.userId = 'dev_user_' + Date.now();
-          await this.initializeUser();
+          console.log('No user data in initData, checking URL parameters');
+          // Try to get user ID from URL parameters (when opened from bot)
+          const urlParams = new URLSearchParams(window.location.search);
+          const botUserId = urlParams.get('user_id');
+          
+          if (botUserId) {
+            this.userId = botUserId;
+            console.log('User ID from URL parameters:', this.userId);
+            await this.initializeUser();
+          } else {
+            console.log('No user ID found, using fallback');
+            this.userId = 'dev_user_' + Date.now();
+            await this.initializeUser();
+          }
         }
       } else {
-        console.log('Not in Telegram WebApp, using web fallback');
-        // Fallback for non-Telegram environment
-        this.userId = 'web_user_' + Date.now();
-        await this.initializeUser();
+        console.log('Not in Telegram WebApp, checking URL parameters');
+        // Try to get user ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const botUserId = urlParams.get('user_id');
+        
+        if (botUserId) {
+          this.userId = botUserId;
+          console.log('User ID from URL parameters:', this.userId);
+          await this.initializeUser();
+        } else {
+          console.log('No user ID found, using web fallback');
+          this.userId = 'web_user_' + Date.now();
+          await this.initializeUser();
+        }
       }
     } catch (error) {
       console.error('Error initializing Telegram WebApp:', error);
@@ -110,24 +129,7 @@ class VaultCoinApp {
       // Check if Firebase is initialized
       if (!db) {
         console.log('Firebase not initialized, creating local user data');
-        this.userData = {
-          userId: this.userId,
-          telegramId: this.telegramUser ? this.telegramUser.id : null,
-          telegramName: this.telegramUser ? this.telegramUser.first_name : null,
-          telegramUsername: this.telegramUser ? this.telegramUser.username : null,
-          balance: 0,
-          vaultTier: 'silver',
-          miningStartTime: null,
-          lastClaimTime: null,
-          streak: 0,
-          totalMined: 0,
-          referrals: [],
-          boosts: [],
-          nfts: [],
-          isAdmin: false,
-          createdAt: new Date(),
-          lastActive: new Date()
-        };
+        this.userData = this.createDefaultUserData();
         this.isInitialized = true;
         this.updateUI();
         this.startMiningTimer();
@@ -141,27 +143,13 @@ class VaultCoinApp {
       if (userDoc.exists) {
         this.userData = userDoc.data();
         console.log('Existing user data loaded:', this.userData);
+        
+        // Ensure all required fields exist
+        this.userData = this.ensureUserDataFields(this.userData);
       } else {
         console.log('Creating new user...');
         // Create new user with Telegram info
-        this.userData = {
-          userId: this.userId,
-          telegramId: this.telegramUser ? this.telegramUser.id : null,
-          telegramName: this.telegramUser ? this.telegramUser.first_name : null,
-          telegramUsername: this.telegramUser ? this.telegramUser.username : null,
-          balance: 0,
-          vaultTier: 'silver',
-          miningStartTime: null,
-          lastClaimTime: null,
-          streak: 0,
-          totalMined: 0,
-          referrals: [],
-          boosts: [],
-          nfts: [],
-          isAdmin: false, // Will be checked against admin list
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastActive: firebase.firestore.FieldValue.serverTimestamp()
-        };
+        this.userData = this.createDefaultUserData();
         
         await db.collection('users').doc(this.userId).set(this.userData);
         console.log('New user created:', this.userData);
@@ -179,19 +167,55 @@ class VaultCoinApp {
     } catch (error) {
       console.error('Error initializing user:', error);
       // Continue anyway - don't block the app
-      this.userData = {
-        userId: this.userId,
-        balance: 0,
-        vaultTier: 'silver',
-        isAdmin: false,
-        totalMined: 0,
-        streak: 0,
-        lastClaimTime: null
-      };
+      this.userData = this.createDefaultUserData();
       this.isInitialized = true;
       this.updateUI();
       this.startMiningTimer();
     }
+  }
+
+  createDefaultUserData() {
+    return {
+      userId: this.userId,
+      telegramId: this.telegramUser ? this.telegramUser.id : this.userId,
+      telegramName: this.telegramUser ? this.telegramUser.first_name : 'User',
+      telegramUsername: this.telegramUser ? this.telegramUser.username : null,
+      balance: 0,
+      vaultTier: 'silver',
+      miningStartTime: null,
+      lastClaimTime: null,
+      streak: 0,
+      totalMined: 0,
+      referrals: [],
+      boosts: [],
+      nfts: [],
+      isAdmin: false,
+      level: 1,
+      experience: 0,
+      referral_count: 0,
+      referral_code: `REF${this.userId}`,
+      createdAt: new Date(),
+      lastActive: new Date()
+    };
+  }
+
+  ensureUserDataFields(userData) {
+    // Ensure all required fields exist with defaults
+    const defaults = this.createDefaultUserData();
+    const ensured = { ...defaults, ...userData };
+    
+    // Convert old format to new format if needed
+    if (userData.user_id && !userData.userId) {
+      ensured.userId = userData.user_id.toString();
+    }
+    if (userData.first_name && !userData.telegramName) {
+      ensured.telegramName = userData.first_name;
+    }
+    if (userData.username && !userData.telegramUsername) {
+      ensured.telegramUsername = userData.username;
+    }
+    
+    return ensured;
   }
 
   async checkAdminStatus() {
@@ -245,6 +269,8 @@ class VaultCoinApp {
 
   updateUI() {
     try {
+      console.log('Updating UI with user data:', this.userData);
+      
       // Update balance display
       const balanceElement = document.getElementById('balance');
       if (balanceElement && this.userData) {
@@ -265,8 +291,41 @@ class VaultCoinApp {
 
       // Update mining status
       this.updateMiningStatus();
+      
+      // Show user verification status
+      this.showUserVerificationStatus();
     } catch (error) {
       console.error('Error updating UI:', error);
+    }
+  }
+
+  showUserVerificationStatus() {
+    // Create or update verification status display
+    let statusElement = document.getElementById('user-verification-status');
+    if (!statusElement) {
+      statusElement = document.createElement('div');
+      statusElement.id = 'user-verification-status';
+      statusElement.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        z-index: 1000;
+        font-family: monospace;
+      `;
+      document.body.appendChild(statusElement);
+    }
+    
+    if (this.userData) {
+      const status = this.userData.telegramId ? '✅ Verified' : '❌ Not Verified';
+      const userId = this.userData.userId || this.userId;
+      statusElement.textContent = `${status} | ID: ${userId}`;
+    } else {
+      statusElement.textContent = '❌ No User Data';
     }
   }
 
@@ -537,6 +596,28 @@ window.vaultCoinApp = new VaultCoinApp();
 function toggleMining() {
   if (window.vaultCoinApp) {
     window.vaultCoinApp.toggleMining();
+  }
+}
+
+// Global function to test user verification
+function testUserVerification() {
+  if (window.vaultCoinApp) {
+    console.log('=== USER VERIFICATION TEST ===');
+    console.log('User ID:', window.vaultCoinApp.userId);
+    console.log('User Data:', window.vaultCoinApp.userData);
+    console.log('Is Initialized:', window.vaultCoinApp.isInitialized);
+    console.log('Telegram User:', window.vaultCoinApp.telegramUser);
+    console.log('Is Admin:', window.vaultCoinApp.isAdmin);
+    console.log('==============================');
+    
+    // Show alert with user info
+    const userInfo = window.vaultCoinApp.userData ? 
+      `User ID: ${window.vaultCoinApp.userId}\nBalance: ${window.vaultCoinApp.userData.balance} VLTC\nVault: ${window.vaultCoinApp.userData.vaultTier}\nVerified: ${window.vaultCoinApp.userData.telegramId ? 'Yes' : 'No'}` :
+      'No user data available';
+    
+    alert('User Verification Test:\n\n' + userInfo);
+  } else {
+    alert('VaultCoin App not initialized!');
   }
 }
 

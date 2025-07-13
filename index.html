@@ -139,50 +139,19 @@
       50% { transform: translateY(-10px); }
     }
 
-    /* Progress Ring */
-    .progress-container {
-      position: relative;
+    /* Vault Icon Container */
+    .vault-icon-container {
       width: 200px;
       height: 200px;
       margin: 0 auto 2rem;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .progress-ring {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    .progress-ring circle {
-      fill: none;
-      stroke-width: 8;
-      stroke-linecap: round;
-    }
-
-    .progress-bg {
-      stroke: rgba(255, 255, 255, 0.1);
-    }
-
-    .progress-fill {
-      stroke: var(--primary-gold);
-      stroke-dasharray: 440;
-      stroke-dashoffset: 440;
-      transition: stroke-dashoffset 0.5s ease;
-      filter: drop-shadow(0 0 10px var(--primary-gold));
+      position: relative;
     }
 
     /* Vault Icon */
     .vault-icon {
-      position: absolute;
-      top: 50%; 
-      left: 50%;
-      transform: translate(-50%, -50%);
       width: 80px;
       height: 80px;
       border-radius: 50%;
@@ -409,14 +378,8 @@
   <!-- Main Mining Interface -->
   <main class="mining-container">
   <div class="vault-card">
-      <!-- Progress Ring -->
-      <div class="progress-container">
-        <svg class="progress-ring">
-          <circle class="progress-bg" cx="100" cy="100" r="70"></circle>
-          <circle class="progress-fill" cx="100" cy="100" r="70" id="progress-fill"></circle>
-      </svg>
-        
-        <!-- Vault Icon -->
+      <!-- Vault Icon Container -->
+      <div class="vault-icon-container">
         <div class="vault-icon" id="vault-icon">
           <i data-lucide="shield" style="width: 40px; height: 40px; color: white;"></i>
         </div>
@@ -434,6 +397,34 @@
           <span id="btn-text">Start Mining</span>
         </button>
         <div class="countdown" id="countdown"></div>
+        
+        <!-- User Verification Test Button (for debugging) -->
+        <button class="test-btn" onclick="testUserVerification()" style="
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          padding: 0.5rem 1rem;
+          border-radius: 0.5rem;
+          margin-top: 1rem;
+          font-size: 0.8rem;
+          cursor: pointer;
+        ">
+          🔍 Test User Verification
+        </button>
+        
+        <!-- Debug All Systems Button -->
+        <button class="debug-btn" onclick="debugAllSystems()" style="
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          padding: 0.5rem 1rem;
+          border-radius: 0.5rem;
+          margin-top: 0.5rem;
+          font-size: 0.8rem;
+          cursor: pointer;
+        ">
+          🐛 Debug All Systems
+        </button>
       </div>
     </div>
   </main>
@@ -480,5 +471,56 @@
   <script src="scripts/supply-management.js"></script>
   <script src="scripts/mining-system.js"></script>
   <script src="scripts/main.js"></script>
+  
+  <!-- Debug Script -->
+  <script>
+    // Debug function to check all systems
+    function debugAllSystems() {
+      console.log('=== DEBUGGING ALL SYSTEMS ===');
+      
+      // Check Firebase
+      console.log('Firebase:', {
+        auth: !!window.auth,
+        db: !!window.db,
+        rtdb: !!window.rtdb
+      });
+      
+      // Check VaultCoin App
+      console.log('VaultCoin App:', {
+        exists: !!window.vaultCoinApp,
+        userId: window.vaultCoinApp?.userId,
+        isInitialized: window.vaultCoinApp?.isInitialized,
+        userData: window.vaultCoinApp?.userData
+      });
+      
+      // Check Mining System
+      console.log('Mining System:', {
+        exists: !!window.vaultCoinMining,
+        currentUser: window.vaultCoinMining?.currentUser,
+        userData: window.vaultCoinMining?.userData
+      });
+      
+      // Check Telegram WebApp
+      console.log('Telegram WebApp:', {
+        exists: !!window.Telegram,
+        WebApp: !!window.Telegram?.WebApp,
+        initData: window.Telegram?.WebApp?.initDataUnsafe
+      });
+      
+      // Check URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log('URL Parameters:', {
+        user_id: urlParams.get('user_id'),
+        all: Object.fromEntries(urlParams.entries())
+      });
+      
+      console.log('=== END DEBUG ===');
+    }
+    
+    // Run debug after page loads
+    window.addEventListener('load', () => {
+      setTimeout(debugAllSystems, 2000);
+    });
+  </script>
 </body>
 </html>
