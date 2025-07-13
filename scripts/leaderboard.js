@@ -14,6 +14,11 @@ class VaultCoinLeaderboard {
 
   async init() {
     try {
+      // Use page manager for loading state
+      if (window.pageManager) {
+        window.pageManager.setLoading(true);
+      }
+      
       // Initialize Lucide icons
       if (window.lucide) {
         lucide.createIcons();
@@ -34,9 +39,19 @@ class VaultCoinLeaderboard {
       // Update UI
       this.updateUserStats();
       
+      // Hide loading
+      if (window.pageManager) {
+        window.pageManager.setLoading(false);
+      }
+      
     } catch (error) {
       console.error('Error initializing leaderboard:', error);
+      if (window.pageManager) {
+        window.pageManager.showErrorNotification('Failed to load leaderboard. Please try again.');
+        window.pageManager.setLoading(false);
+      } else {
       this.showError('Failed to load leaderboard. Please try again.');
+      }
     }
   }
 
@@ -45,12 +60,22 @@ class VaultCoinLeaderboard {
     if (window.Telegram && window.Telegram.WebApp) {
       const initData = window.Telegram.WebApp.initDataUnsafe;
       if (initData && initData.user) {
+        console.log('Telegram user found:', initData.user);
         return initData.user.id.toString();
       }
     }
     
+    // Check if we have a stored user ID
+    const storedId = localStorage.getItem('vaultcoin_user_id');
+    if (storedId) {
+      console.log('Using stored user ID:', storedId);
+      return storedId;
+    }
+    
     // Fallback for development/testing
-    return localStorage.getItem('vaultcoin_user_id') || 'dev_user_' + Date.now();
+    const fallbackId = 'dev_user_' + Date.now();
+    console.log('Using fallback user ID:', fallbackId);
+    return fallbackId;
   }
 
   async loadUserData() {
@@ -108,6 +133,11 @@ class VaultCoinLeaderboard {
     try {
       this.showLoading(true);
       
+      // Check if Firebase is available
+      if (!db) {
+        throw new Error('Firebase not initialized');
+      }
+      
       let query = db.collection('users');
       
       // Apply sorting based on current tab
@@ -146,7 +176,11 @@ class VaultCoinLeaderboard {
       
     } catch (error) {
       console.error('Error loading leaderboard:', error);
+      if (window.pageManager) {
+        window.pageManager.showErrorNotification('Failed to load leaderboard data.');
+      } else {
       this.showError('Failed to load leaderboard data.');
+      }
     } finally {
       this.showLoading(false);
     }
@@ -248,6 +282,19 @@ class VaultCoinLeaderboard {
     if (user.telegramName) {
       return user.telegramName;
     }
+    
+    // Try to get from Telegram username
+    if (user.telegramUsername) {
+      return '@' + user.telegramUsername;
+    }
+    
+    // Try to get from display name
+    if (user.displayName) {
+      return user.displayName;
+    }
+    
+    // Fallback to user ID
+    return 'User ' + user.userId.substring(0, 8);
     
     // Fallback to user ID
     return `User ${user.userId.slice(-4)}`;

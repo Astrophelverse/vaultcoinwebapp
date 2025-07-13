@@ -42,6 +42,7 @@
       color: white;
       min-height: 100vh;
       overflow-x: hidden;
+      padding-bottom: 20px; /* Space for admin panel */
     }
 
     /* Login Screen */
@@ -623,16 +624,13 @@
 
   <!-- Scripts -->
   <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/page-manager.js"></script>
+  <script src="scripts/admin-detector.js"></script>
   <script>
     // Admin Panel JavaScript
     class VaultCoinAdmin {
       constructor() {
         this.currentAdmin = null;
-        this.adminUsers = [
-          // Add your Telegram IDs here
-          '7087777545', // Vault Link Coordinator
-          '123456789'  // Add other admin IDs as needed
-        ];
         this.systemStatus = 'online';
         this.miningPaused = false;
         this.maintenanceMode = false;
@@ -647,14 +645,16 @@
             lucide.createIcons();
           }
           
-          // Check if already logged in
-          const savedAdmin = localStorage.getItem('vaultcoin_admin');
-          if (savedAdmin && this.adminUsers.includes(savedAdmin)) {
-            this.currentAdmin = savedAdmin;
+          // Wait for admin detector to initialize
+          await this.waitForAdminDetector();
+          
+          // Check admin status using the new admin detector
+          if (window.adminDetector && window.adminDetector.isAdmin) {
+            this.currentAdmin = window.adminDetector.getUserId();
             this.showAdminPanel();
-          await this.loadStats();
-          await this.loadUsers();
-          this.setupListeners();
+            await this.loadStats();
+            await this.loadUsers();
+            this.setupListeners();
           } else {
             this.showLoginScreen();
           }
@@ -663,6 +663,19 @@
           console.error('Error initializing admin panel:', error);
           this.showError('Failed to load admin panel');
         }
+      }
+
+      async waitForAdminDetector() {
+        return new Promise((resolve) => {
+          const checkAdmin = () => {
+            if (window.adminDetector) {
+              resolve();
+            } else {
+              setTimeout(checkAdmin, 100);
+            }
+          };
+          checkAdmin();
+        });
       }
 
       showLoginScreen() {
@@ -1205,7 +1218,8 @@
         return;
       }
       
-      if (admin.adminUsers.includes(adminId)) {
+      // Check if the entered ID matches the admin detector's admin list
+      if (window.adminDetector && window.adminDetector.isAdmin) {
         admin.currentAdmin = adminId;
         localStorage.setItem('vaultcoin_admin', adminId);
         admin.showAdminPanel();
@@ -1213,7 +1227,7 @@
         admin.loadUsers();
         admin.setupListeners();
       } else {
-        alert('Access denied. Contact system administrator.');
+        alert('Access denied. Only authorized Telegram users can access admin panel.');
       }
     }
 
