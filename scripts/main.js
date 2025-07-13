@@ -266,13 +266,11 @@ window.addEventListener('load', optimizeAnimations);
 
 // Global error handler to prevent crashes
 window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-  // Don't show user-facing errors
+  // Silent error handling
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  // Don't show user-facing errors
+  // Silent error handling
 });
 
 console.log('🚀 VaultCoin Main.js loaded successfully!');

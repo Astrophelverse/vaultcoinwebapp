@@ -381,7 +381,7 @@
       <!-- Vault Icon Container -->
       <div class="vault-icon-container">
         <div class="vault-icon" id="vault-icon">
-          <i data-lucide="shield" style="width: 40px; height: 40px; color: white;"></i>
+          <i data-lucide="gem" style="width: 40px; height: 40px; color: white;"></i>
         </div>
       </div>
 
@@ -398,33 +398,7 @@
         </button>
         <div class="countdown" id="countdown"></div>
         
-        <!-- User Verification Test Button (for debugging) -->
-        <button class="test-btn" onclick="testUserVerification()" style="
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          margin-top: 1rem;
-          font-size: 0.8rem;
-          cursor: pointer;
-        ">
-          🔍 Test User Verification
-        </button>
-        
-        <!-- Debug All Systems Button -->
-        <button class="debug-btn" onclick="debugAllSystems()" style="
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          margin-top: 0.5rem;
-          font-size: 0.8rem;
-          cursor: pointer;
-        ">
-          🐛 Debug All Systems
-        </button>
+
       </div>
     </div>
   </main>
@@ -472,55 +446,6 @@
   <script src="scripts/mining-system.js"></script>
   <script src="scripts/main.js"></script>
   
-  <!-- Debug Script -->
-  <script>
-    // Debug function to check all systems
-    function debugAllSystems() {
-      console.log('=== DEBUGGING ALL SYSTEMS ===');
-      
-      // Check Firebase
-      console.log('Firebase:', {
-        auth: !!window.auth,
-        db: !!window.db,
-        rtdb: !!window.rtdb
-      });
-      
-      // Check VaultCoin App
-      console.log('VaultCoin App:', {
-        exists: !!window.vaultCoinApp,
-        userId: window.vaultCoinApp?.userId,
-        isInitialized: window.vaultCoinApp?.isInitialized,
-        userData: window.vaultCoinApp?.userData
-      });
-      
-      // Check Mining System
-      console.log('Mining System:', {
-        exists: !!window.vaultCoinMining,
-        currentUser: window.vaultCoinMining?.currentUser,
-        userData: window.vaultCoinMining?.userData
-      });
-      
-      // Check Telegram WebApp
-      console.log('Telegram WebApp:', {
-        exists: !!window.Telegram,
-        WebApp: !!window.Telegram?.WebApp,
-        initData: window.Telegram?.WebApp?.initDataUnsafe
-      });
-      
-      // Check URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      console.log('URL Parameters:', {
-        user_id: urlParams.get('user_id'),
-        all: Object.fromEntries(urlParams.entries())
-      });
-      
-      console.log('=== END DEBUG ===');
-    }
-    
-    // Run debug after page loads
-    window.addEventListener('load', () => {
-      setTimeout(debugAllSystems, 2000);
-    });
-  </script>
+
 </body>
 </html>

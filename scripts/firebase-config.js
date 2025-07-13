@@ -40,7 +40,7 @@ window.rtdb = rtdb;
 
 console.log('🔥 VaultCoin Firebase initialized successfully!');
 } catch (error) {
-  console.error('❌ Firebase initialization failed:', error);
+  // Silent error handling
 }
 
 // Telegram WebApp Integration with improved error handling
@@ -115,8 +115,7 @@ class VaultCoinApp {
         }
       }
     } catch (error) {
-      console.error('Error initializing Telegram WebApp:', error);
-      // Fallback initialization
+      // Silent error handling
       this.userId = 'fallback_user_' + Date.now();
       await this.initializeUser();
     }
@@ -165,8 +164,7 @@ class VaultCoinApp {
       console.log('User initialization complete!');
       
     } catch (error) {
-      console.error('Error initializing user:', error);
-      // Continue anyway - don't block the app
+      // Silent error handling
       this.userData = this.createDefaultUserData();
       this.isInitialized = true;
       this.updateUI();
@@ -599,27 +597,7 @@ function toggleMining() {
   }
 }
 
-// Global function to test user verification
-function testUserVerification() {
-  if (window.vaultCoinApp) {
-    console.log('=== USER VERIFICATION TEST ===');
-    console.log('User ID:', window.vaultCoinApp.userId);
-    console.log('User Data:', window.vaultCoinApp.userData);
-    console.log('Is Initialized:', window.vaultCoinApp.isInitialized);
-    console.log('Telegram User:', window.vaultCoinApp.telegramUser);
-    console.log('Is Admin:', window.vaultCoinApp.isAdmin);
-    console.log('==============================');
-    
-    // Show alert with user info
-    const userInfo = window.vaultCoinApp.userData ? 
-      `User ID: ${window.vaultCoinApp.userId}\nBalance: ${window.vaultCoinApp.userData.balance} VLTC\nVault: ${window.vaultCoinApp.userData.vaultTier}\nVerified: ${window.vaultCoinApp.userData.telegramId ? 'Yes' : 'No'}` :
-      'No user data available';
-    
-    alert('User Verification Test:\n\n' + userInfo);
-  } else {
-    alert('VaultCoin App not initialized!');
-  }
-}
+// Removed test function
 
 // Add mining animation CSS
 const miningStyle = document.createElement('style');
