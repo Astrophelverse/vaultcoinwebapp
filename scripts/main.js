@@ -31,6 +31,15 @@ function hideLoading() {
   loadingElements.forEach(el => {
     el.style.display = 'none';
   });
+  
+  // Also hide any elements with loading class
+  const loadingClassElements = document.querySelectorAll('.loading');
+  loadingClassElements.forEach(el => {
+    el.style.display = 'none';
+  });
+  
+  // Remove loading from body if present
+  document.body.classList.remove('loading');
 }
 
 // Create floating particles effect

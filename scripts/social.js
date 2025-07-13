@@ -206,13 +206,8 @@ class VaultCoinSocial {
   }
 
   updateCommunityStats() {
-    // Update live stats (in production, these would be real-time)
-    Object.entries(this.communityStats).forEach(([platform, stats]) => {
-      const valueElement = document.getElementById(`${platform}-${platform === 'telegram' ? 'members' : platform === 'youtube' ? 'subscribers' : 'followers'}`);
-      if (valueElement) {
-        valueElement.textContent = stats.members.toLocaleString();
-      }
-    });
+    // Community stats are now static descriptions, no need to update numbers
+    console.log('Community stats updated with descriptions');
   }
 
   handleSocialClick(platform) {

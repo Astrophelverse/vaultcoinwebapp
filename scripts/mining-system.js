@@ -32,24 +32,34 @@ class VaultCoinMining {
       if (window.vaultCoinApp && window.vaultCoinApp.userId) {
         this.currentUser = window.vaultCoinApp.userId;
         this.userData = window.vaultCoinApp.userData;
+        console.log('Mining system loaded user data from main app:', this.userData);
       } else {
         // Fallback: create a temporary user
         this.currentUser = 'temp_user_' + Date.now();
         this.userData = {
+          userId: this.currentUser,
           balance: 0,
           totalMined: 0,
           miningSessions: 0,
           lastMineTime: null,
+          lastClaimTime: null,
           miningRate: 1,
           boostMultiplier: 1,
           vaultTier: 'silver',
+          streak: 0,
           createdAt: new Date(),
           updatedAt: new Date()
         };
+        console.log('Mining system created fallback user data:', this.userData);
       }
       
       if (this.userData) {
-        this.lastMineTime = this.userData.lastMineTime ? new Date(this.userData.lastMineTime.toDate ? this.userData.lastMineTime.toDate() : this.userData.lastMineTime) : null;
+        // Handle both lastMineTime and lastClaimTime
+        this.lastMineTime = this.userData.lastMineTime ? 
+          new Date(this.userData.lastMineTime.toDate ? this.userData.lastMineTime.toDate() : this.userData.lastMineTime) : 
+          this.userData.lastClaimTime ? 
+            new Date(this.userData.lastClaimTime.toDate ? this.userData.lastClaimTime.toDate() : this.userData.lastClaimTime) : 
+            null;
         this.miningRate = this.userData.miningRate || 1;
         this.boostMultiplier = this.userData.boostMultiplier || 1;
       }
@@ -57,13 +67,16 @@ class VaultCoinMining {
       console.error('Error loading user data:', error);
       // Create fallback user data
       this.userData = {
+        userId: 'fallback_user_' + Date.now(),
         balance: 0,
         totalMined: 0,
         miningSessions: 0,
         lastMineTime: null,
+        lastClaimTime: null,
         miningRate: 1,
         boostMultiplier: 1,
         vaultTier: 'silver',
+        streak: 0,
         createdAt: new Date(),
         updatedAt: new Date()
       };

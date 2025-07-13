@@ -109,7 +109,30 @@ class VaultCoinApp {
       
       // Check if Firebase is initialized
       if (!db) {
-        throw new Error('Firebase not initialized');
+        console.log('Firebase not initialized, creating local user data');
+        this.userData = {
+          userId: this.userId,
+          telegramId: this.telegramUser ? this.telegramUser.id : null,
+          telegramName: this.telegramUser ? this.telegramUser.first_name : null,
+          telegramUsername: this.telegramUser ? this.telegramUser.username : null,
+          balance: 0,
+          vaultTier: 'silver',
+          miningStartTime: null,
+          lastClaimTime: null,
+          streak: 0,
+          totalMined: 0,
+          referrals: [],
+          boosts: [],
+          nfts: [],
+          isAdmin: false,
+          createdAt: new Date(),
+          lastActive: new Date()
+        };
+        this.isInitialized = true;
+        this.updateUI();
+        this.startMiningTimer();
+        console.log('Local user data created:', this.userData);
+        return;
       }
       
       // Get or create user data
@@ -157,12 +180,17 @@ class VaultCoinApp {
       console.error('Error initializing user:', error);
       // Continue anyway - don't block the app
       this.userData = {
+        userId: this.userId,
         balance: 0,
         vaultTier: 'silver',
-        isAdmin: false
+        isAdmin: false,
+        totalMined: 0,
+        streak: 0,
+        lastClaimTime: null
       };
       this.isInitialized = true;
       this.updateUI();
+      this.startMiningTimer();
     }
   }
 
