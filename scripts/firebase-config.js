@@ -42,27 +42,6 @@ window.rtdb = rtdb;
 console.log('🔥 VaultCoin Firebase initialized successfully!');
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
-  // Show user-friendly error
-  showFirebaseError();
-}
-
-// Show Firebase error to user
-function showFirebaseError() {
-  const errorDiv = document.createElement('div');
-  errorDiv.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: #ff4444;
-    color: white;
-    padding: 1rem;
-    text-align: center;
-    z-index: 10000;
-    font-family: 'Satoshi', sans-serif;
-  `;
-  errorDiv.innerHTML = '⚠️ Connection error. Please check your internet and refresh the page.';
-  document.body.appendChild(errorDiv);
 }
 
 // Telegram WebApp Integration with improved error handling
@@ -128,12 +107,6 @@ class VaultCoinApp {
     try {
       console.log('Initializing user with ID:', this.userId);
       
-      // Show loading state
-      const loadingElement = document.getElementById('loading');
-      if (loadingElement) {
-        loadingElement.style.display = 'block';
-      }
-      
       // Check if Firebase is initialized
       if (!db) {
         throw new Error('Firebase not initialized');
@@ -178,22 +151,18 @@ class VaultCoinApp {
       this.updateUI();
       this.startMiningTimer();
       
-      // Hide loading
-      if (loadingElement) {
-        loadingElement.style.display = 'none';
-      }
-      
       console.log('User initialization complete!');
       
     } catch (error) {
       console.error('Error initializing user:', error);
-      const loadingElement = document.getElementById('loading');
-      if (loadingElement) {
-        loadingElement.style.display = 'none';
-      }
-      
-      // Show user-friendly error
-      this.showError('Failed to connect to VaultCoin Network. Please try again.');
+      // Continue anyway - don't block the app
+      this.userData = {
+        balance: 0,
+        vaultTier: 'silver',
+        isAdmin: false
+      };
+      this.isInitialized = true;
+      this.updateUI();
     }
   }
 
@@ -246,105 +215,98 @@ class VaultCoinApp {
     }
   }
 
-  showError(message) {
-    // Create error notification
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = `
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ff4444;
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 0.5rem;
-      z-index: 10000;
-      font-family: 'Satoshi', sans-serif;
-      box-shadow: 0 4px 20px rgba(255, 68, 68, 0.3);
-    `;
-    errorDiv.textContent = message;
-    document.body.appendChild(errorDiv);
-    
-    // Remove after 5 seconds
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
-      }
-    }, 5000);
-  }
-
   updateUI() {
-    if (!this.userData) return;
-    
-    console.log('Updating UI with user data:', this.userData);
-    
-    // Update balance
-    const balanceElement = document.getElementById('balance');
-    if (balanceElement) {
-      balanceElement.textContent = this.userData.balance.toFixed(2) + ' VLTC';
+    try {
+      // Update balance display
+      const balanceElement = document.getElementById('balance');
+      if (balanceElement && this.userData) {
+        balanceElement.textContent = `${this.userData.balance.toFixed(2)} VLTC`;
+      }
+
+      // Update vault tier display
+      const vaultTierElement = document.getElementById('vault-tier');
+      if (vaultTierElement && this.userData) {
+        vaultTierElement.textContent = this.getVaultTierName(this.userData.vaultTier);
+      }
+
+      // Update vault icon
+      const vaultIconElement = document.getElementById('vault-icon');
+      if (vaultIconElement && this.userData) {
+        vaultIconElement.className = `vault-icon ${this.userData.vaultTier}`;
+      }
+
+      // Update mining status
+      this.updateMiningStatus();
+    } catch (error) {
+      console.error('Error updating UI:', error);
     }
-    
-    // Update vault tier
-    const vaultTierElement = document.getElementById('vault-tier');
-    if (vaultTierElement) {
-      vaultTierElement.textContent = this.getVaultTierName(this.userData.vaultTier);
-    }
-    
-    // Update vault icon
-    const vaultIcon = document.getElementById('vault-icon');
-    if (vaultIcon) {
-      vaultIcon.className = `vault-icon ${this.userData.vaultTier}`;
-    }
-    
-    // Update mining status
-    this.updateMiningStatus();
   }
 
   getVaultTierName(tier) {
-    const tiers = {
+    const tierNames = {
       'silver': 'Silver Vault',
       'gold': 'Gold Vault',
       'diamond': 'Diamond Vault',
       'platinum': 'Platinum Vault',
       'elite': 'Elite Vault'
     };
-    return tiers[tier] || 'Silver Vault';
+    return tierNames[tier] || 'Silver Vault';
   }
 
   updateMiningStatus() {
-    const mineBtn = document.getElementById('mine-btn');
-    const btnText = document.getElementById('btn-text');
-    const countdown = document.getElementById('countdown');
-    
-    if (!this.userData.miningStartTime) {
-      // Not mining
-      if (mineBtn) mineBtn.disabled = false;
-      if (btnText) btnText.textContent = 'Start Mining';
-      if (countdown) countdown.textContent = 'Ready to mine!';
-      this.updateProgress(0);
-    } else {
-      const now = Date.now();
-      const startTime = this.userData.miningStartTime.toDate ? 
-        this.userData.miningStartTime.toDate().getTime() : 
-        this.userData.miningStartTime;
+    try {
+      const mineBtn = document.getElementById('mine-btn');
+      const btnText = document.getElementById('btn-text');
+      const countdownElement = document.getElementById('countdown');
       
-      const elapsed = now - startTime;
-      const miningDuration = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      if (!mineBtn || !btnText) return;
+
+      // Check if user can mine
+      const canMine = this.canMine();
       
-      if (elapsed >= miningDuration) {
-        // Ready to claim
-        if (mineBtn) mineBtn.disabled = false;
-        if (btnText) btnText.textContent = 'Claim Rewards';
-        if (countdown) countdown.textContent = 'Mining complete!';
-        this.updateProgress(100);
+      if (canMine) {
+        mineBtn.disabled = false;
+        btnText.textContent = 'Start Mining';
+        if (countdownElement) countdownElement.textContent = '';
       } else {
-        // Still mining
-        if (mineBtn) mineBtn.disabled = true;
-        if (btnText) btnText.textContent = 'Mining...';
-        const remaining = miningDuration - elapsed;
-        if (countdown) countdown.textContent = this.formatTime(remaining);
-        this.updateProgress((elapsed / miningDuration) * 100);
+        mineBtn.disabled = true;
+        btnText.textContent = 'Mining Cooldown';
+        this.updateCountdown(countdownElement);
       }
+    } catch (error) {
+      console.error('Error updating mining status:', error);
+    }
+  }
+
+  canMine() {
+    if (!this.userData || !this.userData.lastClaimTime) return true;
+    
+    const now = Date.now();
+    const lastClaim = this.userData.lastClaimTime.toDate ? 
+      this.userData.lastClaimTime.toDate().getTime() : 
+      new Date(this.userData.lastClaimTime).getTime();
+    
+    const cooldown = 12 * 60 * 60 * 1000; // 12 hours
+    return (now - lastClaim) >= cooldown;
+  }
+
+  updateCountdown(element) {
+    if (!element || !this.userData || !this.userData.lastClaimTime) return;
+    
+    const now = Date.now();
+    const lastClaim = this.userData.lastClaimTime.toDate ? 
+      this.userData.lastClaimTime.toDate().getTime() : 
+      new Date(this.userData.lastClaimTime).getTime();
+    
+    const cooldown = 12 * 60 * 60 * 1000; // 12 hours
+    const remaining = cooldown - (now - lastClaim);
+    
+    if (remaining > 0) {
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      element.textContent = `Next mining in ${hours}h ${minutes}m`;
+    } else {
+      element.textContent = '';
     }
   }
 
@@ -370,164 +332,206 @@ class VaultCoinApp {
       return;
     }
     
-    const mineBtn = document.getElementById('mine-btn');
-    const btnText = document.getElementById('btn-text');
-    
-    if (btnText && btnText.textContent === 'Start Mining') {
-      // Start mining
+    if (this.canMine()) {
       await this.startMining();
-    } else if (btnText && btnText.textContent === 'Claim Rewards') {
-      // Claim rewards
-      await this.claimRewards();
+    } else {
+      console.log('Mining cooldown active');
     }
   }
 
   async startMining() {
     try {
-      console.log('Starting mining for user:', this.userId);
-      const now = firebase.firestore.FieldValue.serverTimestamp();
+      console.log('Starting mining...');
       
-      await db.collection('users').doc(this.userId).update({
-        miningStartTime: now,
-        lastActive: now
-      });
+      // Update UI to show mining state
+      const mineBtn = document.getElementById('mine-btn');
+      const btnText = document.getElementById('btn-text');
       
-      this.userData.miningStartTime = now;
-      this.updateMiningStatus();
-      this.createMiningEffect();
+      if (mineBtn) mineBtn.disabled = true;
+      if (btnText) btnText.textContent = 'Mining...';
       
-      console.log('Mining started successfully');
+      // Simulate mining process
+      const miningDuration = 3000 + Math.random() * 2000; // 3-5 seconds
+      const startTime = Date.now();
+      
+      // Update progress
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / miningDuration) * 100, 100);
+        this.updateProgress(progress);
+      }, 100);
+      
+      // Complete mining after duration
+      setTimeout(async () => {
+        clearInterval(progressInterval);
+        await this.claimRewards();
+      }, miningDuration);
+      
     } catch (error) {
       console.error('Error starting mining:', error);
-      alert('Failed to start mining. Please try again.');
+      this.updateMiningStatus();
     }
   }
 
   async claimRewards() {
     try {
-      console.log('Claiming rewards for user:', this.userId);
+      // Calculate reward
       const reward = this.calculateReward();
-      const now = firebase.firestore.FieldValue.serverTimestamp();
       
-      await db.collection('users').doc(this.userId).update({
-        balance: firebase.firestore.FieldValue.increment(reward),
-        miningStartTime: null,
-        lastClaimTime: now,
-        totalMined: firebase.firestore.FieldValue.increment(reward),
-        lastActive: now
-      });
-      
+      // Update user data
       this.userData.balance += reward;
-      this.userData.miningStartTime = null;
-      this.userData.lastClaimTime = now;
       this.userData.totalMined += reward;
+      this.userData.lastClaimTime = firebase.firestore.FieldValue.serverTimestamp();
       
-      this.updateMiningStatus();
+      // Save to Firebase
+      if (db) {
+        await db.collection('users').doc(this.userId).update({
+          balance: this.userData.balance,
+          totalMined: this.userData.totalMined,
+          lastClaimTime: this.userData.lastClaimTime
+        });
+      }
+      
+      // Show success effect
       this.createClaimEffect(reward);
       
-      console.log('Rewards claimed successfully:', reward);
+      // Update UI
+      this.updateUI();
+      
+      console.log(`Mining completed! Earned ${reward} VLTC`);
+      
     } catch (error) {
       console.error('Error claiming rewards:', error);
-      alert('Failed to claim rewards. Please try again.');
     }
   }
 
   calculateReward() {
-    // Base reward calculation
-    let baseReward = 10; // Base 10 VLTC per 24h
+    const baseReward = 10;
+    const tier = this.userData?.vaultTier || 'silver';
     
-    // Apply vault tier multiplier
     const tierMultipliers = {
       'silver': 1,
       'gold': 1.5,
       'diamond': 2,
-      'platinum': 3,
-      'elite': 5
+      'platinum': 2.5,
+      'elite': 3
     };
     
-    const tierMultiplier = tierMultipliers[this.userData.vaultTier] || 1;
-    
-    // Apply active boosts
-    let boostMultiplier = 1;
-    if (this.userData.boosts) {
-      const activeBoosts = this.userData.boosts.filter(boost => 
-        boost.expiresAt > Date.now()
-      );
-      
-      activeBoosts.forEach(boost => {
-        boostMultiplier *= boost.multiplier;
-      });
-    }
-    
-    return Math.floor(baseReward * tierMultiplier * boostMultiplier);
+    const multiplier = tierMultipliers[tier] || 1;
+    return Math.floor(baseReward * multiplier);
   }
 
   createMiningEffect() {
-    const mineBtn = document.getElementById('mine-btn');
-    if (mineBtn) {
-      mineBtn.style.animation = 'pulse 2s infinite';
-    }
-  }
-
-  createClaimEffect(reward) {
-    // Create floating reward text
-    const rewardText = document.createElement('div');
-    rewardText.textContent = `+${reward} VLTC`;
-    rewardText.style.cssText = `
+    // Create mining animation effect
+    const effect = document.createElement('div');
+    effect.style.cssText = `
       position: absolute;
       top: 50%;
       left: 50%;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, #f9c922, transparent);
+      border-radius: 50%;
       transform: translate(-50%, -50%);
-      color: #10b981;
-      font-size: 2rem;
-      font-weight: bold;
-      z-index: 1000;
-      animation: floatUp 2s ease-out forwards;
+      animation: miningPulse 1s ease-out forwards;
       pointer-events: none;
+      z-index: 10;
     `;
     
-    document.body.appendChild(rewardText);
+    document.body.appendChild(effect);
+    setTimeout(() => effect.remove(), 1000);
+  }
+
+  createClaimEffect(reward) {
+    // Create claim success effect
+    const effect = document.createElement('div');
+    effect.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #00aa00;
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-weight: bold;
+      animation: claimSuccess 2s ease-out forwards;
+      z-index: 1000;
+    `;
+    effect.textContent = `+${reward} VLTC!`;
     
-    setTimeout(() => rewardText.remove(), 2000);
+    document.body.appendChild(effect);
+    setTimeout(() => effect.remove(), 2000);
   }
 
   startMiningTimer() {
-    // Update mining status every second
+    // Update countdown every minute
     this.miningInterval = setInterval(() => {
       this.updateMiningStatus();
-    }, 1000);
+    }, 60000);
   }
 
   setupNavigation() {
-    // Setup navigation between pages
-    const navButtons = document.querySelectorAll('[data-page]');
-    navButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const page = btn.dataset.page;
-        this.navigateToPage(page);
+    // Add navigation event listeners
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        const href = item.getAttribute('href');
+        if (href && href !== window.location.pathname.split('/').pop()) {
+          window.location.href = href;
+        }
       });
     });
   }
 
   navigateToPage(page) {
-    // Simple navigation - you can enhance this
-    window.location.href = `${page}.html`;
+    const pages = {
+      'mining': 'index.html',
+      'shop': 'shop.html',
+      'tasks': 'tasks.html',
+      'leaderboard': 'leaderboard.html',
+      'profile': 'profile.html',
+      'social': 'social.html',
+      'admin': 'admin.html'
+    };
+    
+    const targetPage = pages[page];
+    if (targetPage) {
+      window.location.href = targetPage;
+    }
   }
 }
 
-// Initialize app when DOM is loaded
-let vaultCoinApp;
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, initializing VaultCoin app...');
-  vaultCoinApp = new VaultCoinApp();
-});
+// Initialize the app
+window.vaultCoinApp = new VaultCoinApp();
 
 // Global function for mining button
 function toggleMining() {
-  console.log('toggleMining called');
-  if (vaultCoinApp) {
-    vaultCoinApp.toggleMining();
-  } else {
-    console.log('vaultCoinApp not initialized yet');
+  if (window.vaultCoinApp) {
+    window.vaultCoinApp.toggleMining();
   }
-} 
+}
+
+// Add mining animation CSS
+const miningStyle = document.createElement('style');
+miningStyle.textContent = `
+  @keyframes miningPulse {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+  }
+  
+  @keyframes claimSuccess {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+  }
+  
+  .mine-btn:disabled {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    cursor: not-allowed !important;
+  }
+`;
+document.head.appendChild(miningStyle);
+
+console.log('🚀 VaultCoin App initialized!'); 

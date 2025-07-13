@@ -28,22 +28,13 @@ class VaultCoinMining {
 
   async loadUserData() {
     try {
-      if (!firebase.auth().currentUser) {
-        this.currentUser = null;
-        this.userData = null;
-        return;
-      }
-
-      this.currentUser = firebase.auth().currentUser;
-      const userDoc = await db.collection('users').doc(this.currentUser.uid).get();
-      
-      if (userDoc.exists) {
-        this.userData = userDoc.data();
-        this.lastMineTime = this.userData.lastMineTime ? new Date(this.userData.lastMineTime.toDate()) : null;
-        this.miningRate = this.userData.miningRate || 1;
-        this.boostMultiplier = this.userData.boostMultiplier || 1;
+      // Get user ID from the main app
+      if (window.vaultCoinApp && window.vaultCoinApp.userId) {
+        this.currentUser = window.vaultCoinApp.userId;
+        this.userData = window.vaultCoinApp.userData;
       } else {
-        // Create new user
+        // Fallback: create a temporary user
+        this.currentUser = 'temp_user_' + Date.now();
         this.userData = {
           balance: 0,
           totalMined: 0,
@@ -52,22 +43,39 @@ class VaultCoinMining {
           miningRate: 1,
           boostMultiplier: 1,
           vaultTier: 'silver',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
-        await this.saveUserData();
+      }
+      
+      if (this.userData) {
+        this.lastMineTime = this.userData.lastMineTime ? new Date(this.userData.lastMineTime.toDate ? this.userData.lastMineTime.toDate() : this.userData.lastMineTime) : null;
+        this.miningRate = this.userData.miningRate || 1;
+        this.boostMultiplier = this.userData.boostMultiplier || 1;
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      // Create fallback user data
+      this.userData = {
+        balance: 0,
+        totalMined: 0,
+        miningSessions: 0,
+        lastMineTime: null,
+        miningRate: 1,
+        boostMultiplier: 1,
+        vaultTier: 'silver',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
     }
   }
 
   async saveUserData() {
     try {
-      if (!this.currentUser) return;
+      if (!this.currentUser || !db) return;
       
-      this.userData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-      await db.collection('users').doc(this.currentUser.uid).set(this.userData, { merge: true });
+      this.userData.updatedAt = new Date();
+      await db.collection('users').doc(this.currentUser).set(this.userData, { merge: true });
     } catch (error) {
       console.error('Error saving user data:', error);
     }
@@ -82,11 +90,6 @@ class VaultCoinMining {
   }
 
   async startMining() {
-    if (!this.currentUser) {
-      alert('Please log in to start mining');
-      return;
-    }
-
     if (this.isMining) return;
 
     // Check cooldown
@@ -94,7 +97,7 @@ class VaultCoinMining {
       const remainingTime = this.mineCooldown - (Date.now() - this.lastMineTime.getTime());
       const hours = Math.floor(remainingTime / (1000 * 60 * 60));
       const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-      alert(`⏰ Mining cooldown active! Please wait ${hours}h ${minutes}m before mining again.`);
+      console.log(`⏰ Mining cooldown active! Please wait ${hours}h ${minutes}m before mining again.`);
       return;
     }
 
@@ -125,22 +128,24 @@ class VaultCoinMining {
       const baseCoins = this.getTierReward();
       const totalCoins = Math.floor(baseCoins * this.miningRate * this.boostMultiplier);
       
-      // Mint coins from mining allocation
-      if (window.vaultCoinApp && window.vaultCoinApp.supplyManager) {
-        await window.vaultCoinApp.supplyManager.mintCoins(totalCoins, 'mining_reward', 'mining');
-      }
-      
       // Update user data
       this.userData.balance += totalCoins;
       this.userData.totalMined += totalCoins;
       this.userData.miningSessions += 1;
       this.lastMineTime = new Date();
-      this.userData.lastMineTime = firebase.firestore.FieldValue.serverTimestamp();
+      this.userData.lastMineTime = new Date();
       
-      // Save to Firebase
+      // Save to Firebase if available
       await this.saveUserData();
       
-      // Update tasks progress
+      // Update main app data if available
+      if (window.vaultCoinApp && window.vaultCoinApp.userData) {
+        window.vaultCoinApp.userData.balance = this.userData.balance;
+        window.vaultCoinApp.userData.totalMined = this.userData.totalMined;
+        window.vaultCoinApp.userData.lastClaimTime = this.userData.lastMineTime;
+      }
+      
+      // Update tasks progress if available
       if (window.tasks) {
         await window.tasks.updateTaskProgress('mining', 1);
         await window.tasks.updateTaskProgress('earnings', totalCoins);
@@ -205,152 +210,137 @@ class VaultCoinMining {
 
   showMiningSuccess(coinsEarned) {
     // Create success notification
-    const notification = document.createElement('div');
-    notification.style.cssText = `
+    const successDiv = document.createElement('div');
+    successDiv.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: linear-gradient(45deg, var(--primary-gold), var(--secondary-gold));
-      color: var(--dark-bg);
-      padding: 2rem;
+      background: linear-gradient(45deg, #00aa00, #00cc00);
+      color: white;
+      padding: 1.5rem 2rem;
       border-radius: 1rem;
-      text-align: center;
-      font-weight: 700;
+      font-weight: bold;
+      font-size: 1.2rem;
       z-index: 1000;
-      animation: miningSuccess 2s ease;
+      box-shadow: 0 8px 32px rgba(0, 170, 0, 0.3);
+      animation: miningSuccess 2s ease-out forwards;
     `;
-    notification.innerHTML = `
-      <div style="font-size: 3rem; margin-bottom: 1rem;">⛏️</div>
-      <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">Mining Complete!</div>
-      <div style="font-size: 2rem;">+${coinsEarned} VLTC</div>
-    `;
+    successDiv.textContent = `+${coinsEarned} VLTC Mined!`;
     
-    document.body.appendChild(notification);
+    document.body.appendChild(successDiv);
     
-    // Play sound
-    if (window.VaultCoinEffects) {
-      window.VaultCoinEffects.SoundEffects.playClaimSound();
-    }
-    
-    // Remove notification after animation
+    // Remove after animation
     setTimeout(() => {
-      notification.remove();
+      if (successDiv.parentNode) {
+        successDiv.parentNode.removeChild(successDiv);
+      }
     }, 2000);
   }
 
   updateMiningButton() {
     const mineBtn = document.getElementById('mine-btn');
     const btnText = document.getElementById('btn-text');
-    const countdown = document.getElementById('countdown');
     
-    if (!mineBtn) return;
-    
-    if (this.isMining) {
-      mineBtn.disabled = true;
-      btnText.textContent = 'Mining...';
-      countdown.textContent = '⏳ Processing...';
-    } else {
-      mineBtn.disabled = false;
-      btnText.textContent = 'Start Mining';
-      this.updateCountdown();
+    if (mineBtn && btnText) {
+      if (this.isMining) {
+        mineBtn.disabled = true;
+        btnText.textContent = 'Mining...';
+      } else {
+        mineBtn.disabled = false;
+        btnText.textContent = 'Start Mining';
+      }
     }
   }
 
   updateCountdown() {
-    const countdown = document.getElementById('countdown');
-    if (!countdown || !this.lastMineTime) {
-      countdown.textContent = 'Ready to mine!';
-      return;
+    const countdownElement = document.getElementById('countdown');
+    if (!countdownElement || !this.lastMineTime) return;
+    
+    const now = Date.now();
+    const timeSinceLastMine = now - this.lastMineTime.getTime();
+    const remainingTime = this.mineCooldown - timeSinceLastMine;
+    
+    if (remainingTime > 0) {
+      const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+      const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+      countdownElement.textContent = `Next mining in ${hours}h ${minutes}m`;
+    } else {
+      countdownElement.textContent = '';
     }
-    
-    const timeSinceLastMine = Date.now() - this.lastMineTime.getTime();
-    const timeUntilNextMine = this.mineCooldown - timeSinceLastMine;
-    
-    if (timeUntilNextMine <= 0) {
-      countdown.textContent = 'Ready to mine!';
-      return;
-    }
-    
-    const hours = Math.floor(timeUntilNextMine / (1000 * 60 * 60));
-    const minutes = Math.floor((timeUntilNextMine % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeUntilNextMine % (1000 * 60)) / 1000);
-    
-    countdown.textContent = `⏰ Next mine in: ${hours}h ${minutes}m ${seconds}s`;
   }
 
   updateUI() {
-    // Update balance
-    const balanceElement = document.getElementById('balance');
-    if (balanceElement && this.userData) {
-      balanceElement.textContent = `${this.userData.balance.toFixed(2)} VLTC`;
+    try {
+      // Update balance
+      const balanceElement = document.getElementById('balance');
+      if (balanceElement && this.userData) {
+        balanceElement.textContent = `${this.userData.balance.toFixed(2)} VLTC`;
+      }
+      
+      // Update vault tier
+      const vaultTierElement = document.getElementById('vault-tier');
+      if (vaultTierElement && this.userData) {
+        vaultTierElement.textContent = this.getVaultTierName(this.userData.vaultTier);
+      }
+      
+      // Update vault icon
+      const vaultIconElement = document.getElementById('vault-icon');
+      if (vaultIconElement && this.userData) {
+        vaultIconElement.className = `vault-icon ${this.userData.vaultTier}`;
+      }
+      
+      // Update mining button
+      this.updateMiningButton();
+      
+      // Update countdown
+      this.updateCountdown();
+    } catch (error) {
+      console.error('Error updating UI:', error);
     }
-    
-    // Update vault tier
-    const vaultTierElement = document.getElementById('vault-tier');
-    if (vaultTierElement && this.userData) {
-      vaultTierElement.textContent = this.getVaultTierName(this.userData.vaultTier);
-    }
-    
-    // Update vault icon
-    const vaultIcon = document.getElementById('vault-icon');
-    if (vaultIcon && this.userData) {
-      vaultIcon.className = `vault-icon ${this.userData.vaultTier}`;
-    }
-    
-    // Update countdown
-    this.updateCountdown();
   }
 
   getVaultTierName(tier) {
     const tierNames = {
       'silver': 'Silver Vault',
       'gold': 'Gold Vault',
-      'platinum': 'Platinum Vault',
       'diamond': 'Diamond Vault',
+      'platinum': 'Platinum Vault',
       'elite': 'Elite Vault'
     };
     return tierNames[tier] || 'Silver Vault';
   }
 
   startAutoUpdate() {
-    // Update countdown every second
-    setInterval(() => {
+    // Update countdown every minute
+    this.miningInterval = setInterval(() => {
       this.updateCountdown();
-    }, 1000);
-    
-    // Update UI every 5 seconds
-    setInterval(() => {
-      this.updateUI();
-    }, 5000);
+    }, 60000);
   }
 
-  // Boost management
   async applyBoost(boostType, duration) {
     try {
-      switch (boostType) {
-        case 'mining_rate':
-          this.miningRate *= 2;
-          this.userData.miningRate = this.miningRate;
-          break;
-        case 'earnings':
-          this.boostMultiplier *= 1.5;
-          this.userData.boostMultiplier = this.boostMultiplier;
-          break;
-        case 'cooldown':
-          this.mineCooldown = Math.max(this.mineCooldown * 0.5, 60 * 60 * 1000); // Minimum 1 hour
-          this.userData.mineCooldown = this.mineCooldown;
-          break;
+      const boostMultipliers = {
+        'mining': 2,
+        'earnings': 1.5,
+        'speed': 0.5
+      };
+      
+      const multiplier = boostMultipliers[boostType] || 1;
+      this.boostMultiplier *= multiplier;
+      
+      // Save boost to user data
+      if (this.userData) {
+        if (!this.userData.boosts) this.userData.boosts = [];
+        this.userData.boosts.push({
+          type: boostType,
+          multiplier: multiplier,
+          expiresAt: Date.now() + (duration * 60 * 1000)
+        });
+        await this.saveUserData();
       }
       
-      await this.saveUserData();
-      this.updateUI();
-      
-      // Reset boost after duration
-      setTimeout(() => {
-        this.resetBoost(boostType);
-      }, duration);
-      
+      console.log(`Boost applied: ${boostType} x${multiplier} for ${duration} minutes`);
     } catch (error) {
       console.error('Error applying boost:', error);
     }
@@ -358,24 +348,15 @@ class VaultCoinMining {
 
   async resetBoost(boostType) {
     try {
-      switch (boostType) {
-        case 'mining_rate':
-          this.miningRate = 1;
-          this.userData.miningRate = this.miningRate;
-          break;
-        case 'earnings':
-          this.boostMultiplier = 1;
-          this.userData.boostMultiplier = this.boostMultiplier;
-          break;
-        case 'cooldown':
-          this.mineCooldown = 24 * 60 * 60 * 1000;
-          this.userData.mineCooldown = this.mineCooldown;
-          break;
+      this.boostMultiplier = 1;
+      
+      // Remove boost from user data
+      if (this.userData && this.userData.boosts) {
+        this.userData.boosts = this.userData.boosts.filter(boost => boost.type !== boostType);
+        await this.saveUserData();
       }
       
-      await this.saveUserData();
-      this.updateUI();
-      
+      console.log(`Boost reset: ${boostType}`);
     } catch (error) {
       console.error('Error resetting boost:', error);
     }
@@ -383,35 +364,39 @@ class VaultCoinMining {
 }
 
 // Initialize mining system
-const miningSystem = new VaultCoinMining();
+window.vaultCoinMining = new VaultCoinMining();
 
-// Global function for HTML onclick
+// Global function for mining button
 function toggleMining() {
-  miningSystem.toggleMining();
+  if (window.vaultCoinMining) {
+    window.vaultCoinMining.toggleMining();
+  }
 }
 
-// Add mining success animation CSS
-const miningStyle = document.createElement('style');
-miningStyle.textContent = `
-  @keyframes miningSuccess {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
-  }
-  
+// Add mining animation CSS
+const miningAnimationStyle = document.createElement('style');
+miningAnimationStyle.textContent = `
   @keyframes progressPulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
   }
   
-  .mine-btn.mining {
-    background: linear-gradient(45deg, #10b981, #059669);
-    animation: pulse 1s ease-in-out infinite;
+  @keyframes miningSuccess {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
   }
   
-  @keyframes pulse {
+  .mine-btn.mining {
+    background: linear-gradient(45deg, #fbbf24, #f59e0b) !important;
+    animation: miningPulse 1s ease-in-out infinite;
+  }
+  
+  @keyframes miningPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
   }
 `;
-document.head.appendChild(miningStyle); 
+document.head.appendChild(miningAnimationStyle);
+
+console.log('⛏️ VaultCoin Mining System loaded!'); 

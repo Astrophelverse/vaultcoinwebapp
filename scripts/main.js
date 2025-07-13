@@ -20,7 +20,18 @@ window.addEventListener("DOMContentLoaded", () => {
   
   // Add CSS animations
   addCustomStyles();
+  
+  // Ensure loading is hidden
+  hideLoading();
 });
+
+// Hide loading state
+function hideLoading() {
+  const loadingElements = document.querySelectorAll('#loading');
+  loadingElements.forEach(el => {
+    el.style.display = 'none';
+  });
+}
 
 // Create floating particles effect
 function createParticles() {
@@ -75,6 +86,11 @@ function addCustomStyles() {
     
     .vault-icon:hover {
       transform: translate(-50%, -50%) scale(1.1) rotate(5deg);
+    }
+    
+    /* Ensure loading is hidden by default */
+    #loading {
+      display: none !important;
     }
   `;
   document.head.appendChild(style);
@@ -205,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         MiningEffects.createSparkle(x, y);
       }
       
-      // Play sound
+      // Play sound effect
       SoundEffects.playMiningSound();
     });
   }
@@ -214,51 +230,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const vaultIcon = document.getElementById('vault-icon');
   if (vaultIcon) {
     vaultIcon.addEventListener('mouseenter', () => {
-      vaultIcon.style.filter = 'drop-shadow(0 0 20px rgba(249, 201, 34, 0.8))';
+      vaultIcon.style.transform = 'translate(-50%, -50%) scale(1.1) rotate(5deg)';
     });
     
     vaultIcon.addEventListener('mouseleave', () => {
-      vaultIcon.style.filter = 'drop-shadow(0 0 10px rgba(249, 201, 34, 0.5))';
+      vaultIcon.style.transform = 'translate(-50%, -50%) scale(1) rotate(0deg)';
     });
   }
   
-  // Add smooth scrolling for navigation
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      // Add click animation
-      item.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        item.style.transform = 'scale(1)';
-      }, 150);
-    });
-  });
+  // Add progress ring animation
+  const progressFill = document.getElementById('progress-fill');
+  if (progressFill) {
+    // Initialize progress ring
+    const circumference = 2 * Math.PI * 70; // r=70
+    progressFill.style.strokeDasharray = circumference;
+    progressFill.style.strokeDashoffset = circumference;
+  }
 });
 
 // Performance optimization
-let animationFrameId;
 function optimizeAnimations() {
-  // Throttle animations for better performance
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
+  // Reduce animation complexity on mobile
+  if (window.innerWidth < 768) {
+    const particles = document.querySelectorAll('.particle');
+    particles.forEach(particle => {
+      particle.style.animationDuration = '8s';
+    });
   }
-  
-  animationFrameId = requestAnimationFrame(() => {
-    // Update any heavy animations here
-  });
 }
 
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-  }
+// Initialize optimizations
+window.addEventListener('load', optimizeAnimations);
+
+// Global error handler to prevent crashes
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  // Don't show user-facing errors
 });
 
-// Export for global access
-window.VaultCoinEffects = {
-  MiningEffects,
-  SoundEffects,
-  createParticles,
-  optimizeAnimations
-};
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  // Don't show user-facing errors
+});
+
+console.log('🚀 VaultCoin Main.js loaded successfully!');

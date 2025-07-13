@@ -1,5 +1,5 @@
 // VaultCoin Page Manager
-// Handles page transitions, error handling, and loading states
+// Handles page transitions and loading states (simplified)
 
 class PageManager {
   constructor() {
@@ -9,10 +9,6 @@ class PageManager {
   }
 
   init() {
-    // Prevent default error handling
-    window.addEventListener('error', this.handleError.bind(this));
-    window.addEventListener('unhandledrejection', this.handlePromiseError.bind(this));
-    
     // Handle page visibility changes
     document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     
@@ -34,42 +30,6 @@ class PageManager {
     if (path.includes('social.html')) return 'social';
     if (path.includes('admin.html')) return 'admin';
     return 'unknown';
-  }
-
-  handleError(event) {
-    console.error('Page error:', event.error);
-    
-    // Don't show error for common non-critical errors
-    if (this.isNonCriticalError(event.error)) {
-      return;
-    }
-    
-    this.showErrorNotification('An error occurred. Please refresh the page.');
-  }
-
-  handlePromiseError(event) {
-    console.error('Promise error:', event.reason);
-    
-    // Don't show error for common non-critical errors
-    if (this.isNonCriticalError(event.reason)) {
-      return;
-    }
-    
-    this.showErrorNotification('Connection error. Please check your internet.');
-  }
-
-  isNonCriticalError(error) {
-    // List of errors that shouldn't show user notifications
-    const nonCriticalErrors = [
-      'NetworkError',
-      'QuotaExceededError',
-      'NotSupportedError',
-      'AbortError'
-    ];
-    
-    return nonCriticalErrors.some(type => 
-      error && (error.name === type || error.message?.includes(type))
-    );
   }
 
   handleVisibilityChange() {
@@ -107,68 +67,6 @@ class PageManager {
     }
   }
 
-  showErrorNotification(message) {
-    // Remove existing error notifications
-    const existingErrors = document.querySelectorAll('.page-error-notification');
-    existingErrors.forEach(error => error.remove());
-
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'page-error-notification';
-    errorDiv.style.cssText = `
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ff4444;
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 0.5rem;
-      z-index: 10000;
-      font-family: 'Satoshi', sans-serif;
-      box-shadow: 0 4px 20px rgba(255, 68, 68, 0.3);
-      max-width: 90%;
-      text-align: center;
-    `;
-    errorDiv.textContent = message;
-    document.body.appendChild(errorDiv);
-    
-    // Remove after 5 seconds
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
-      }
-    }, 5000);
-  }
-
-  showSuccessNotification(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'page-success-notification';
-    successDiv.style.cssText = `
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #00aa00;
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 0.5rem;
-      z-index: 10000;
-      font-family: 'Satoshi', sans-serif;
-      box-shadow: 0 4px 20px rgba(0, 170, 0, 0.3);
-      max-width: 90%;
-      text-align: center;
-    `;
-    successDiv.textContent = message;
-    document.body.appendChild(successDiv);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-      if (successDiv.parentNode) {
-        successDiv.parentNode.removeChild(successDiv);
-      }
-    }, 3000);
-  }
-
   setLoading(loading) {
     this.isLoading = loading;
     
@@ -203,21 +101,8 @@ class PageManager {
 // Initialize page manager
 window.pageManager = new PageManager();
 
-// Override console.error to prevent spam
-const originalConsoleError = console.error;
-console.error = function(...args) {
-  // Only log errors that aren't common Firebase/network errors
-  const message = args.join(' ');
-  if (!message.includes('Failed to fetch') && 
-      !message.includes('NetworkError') &&
-      !message.includes('QuotaExceededError')) {
-    originalConsoleError.apply(console, args);
-  }
-};
-
-// Add global error handler for better UX
+// Hide any loading states after page load
 window.addEventListener('load', () => {
-  // Hide any loading states after page load
   setTimeout(() => {
     const loadingElements = document.querySelectorAll('#loading');
     loadingElements.forEach(el => {
@@ -225,7 +110,7 @@ window.addEventListener('load', () => {
         el.style.display = 'none';
       }
     });
-  }, 3000);
+  }, 2000);
 });
 
 console.log('📄 Page Manager loaded successfully!'); 
