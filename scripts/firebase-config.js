@@ -298,33 +298,7 @@ class VaultCoinApp {
   }
 
   showUserVerificationStatus() {
-    // Create or update verification status display
-    let statusElement = document.getElementById('user-verification-status');
-    if (!statusElement) {
-      statusElement = document.createElement('div');
-      statusElement.id = 'user-verification-status';
-      statusElement.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        z-index: 1000;
-        font-family: monospace;
-      `;
-      document.body.appendChild(statusElement);
-    }
-    
-    if (this.userData) {
-      const status = this.userData.telegramId ? '✅ Verified' : '❌ Not Verified';
-      const userId = this.userData.userId || this.userId;
-      statusElement.textContent = `${status} | ID: ${userId}`;
-    } else {
-      statusElement.textContent = '❌ No User Data';
-    }
+    // Removed verification status display
   }
 
   getVaultTierName(tier) {
